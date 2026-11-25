@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+
+    <!-- ════════════════════════════════════════════════════════════
+         系统栏 / 窗口底色（2026-11-17 · 修「状态栏是黑的」，见 styles.xml 的说明）
+         ════════════════════════════════════════════════════════════
+         bar_light = 浅色顶栏底色（v3.css §24 .table-bar 的 background #ffffff）
+         bar_dark  = 深色面板色（v3.css「深色适配」里的 panel token = #1b1f24）
+         win_bg_light = 页面底色（与 MainActivity 的 web.setBackgroundColor(0xFFFAFBFC) 同值）
+
+         ⚠ 这三个值必须和 MainActivity 的 BAR_COLOR_LIGHT / BAR_COLOR_DARK / WebView 底色**一致**：
+           本文件是"冷启动第一帧"，运行时颜色由 app.js → CatCard.setUiTheme() → applySystemBars() 覆盖。
+         ⚠ 不要加 values-night 变体：本 App 的深浅是**应用内开关**（html 的 data-ui-theme），
+           和系统的 uiMode 不是一回事；加了会让系统深色把浅色用户带跑。
+         ════════════════════════════════════════════════════════════ -->
+    <color name="bar_light">#FFFFFF</color>
+    <color name="bar_dark">#1B1F24</color>
+    <color name="win_bg_light">#FAFBFC</color>
+</resources>

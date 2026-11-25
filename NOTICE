@@ -1,0 +1,68 @@
+猫卡 · CatCard
+版权与素材声明 / Copyright & Asset Notice
+================================================================
+
+本文件说明「猫卡」仓库中不同内容的权利归属。README 的「版权与二创声明」
+一节是同一份声明的摘要；如有冲突，以本文件为准。
+
+一、代码
+----------------------------------------------------------------
+Copyright (c) 2026 CatCard contributors
+
+app/ 下的源代码（HTML / CSS / JavaScript / Python / Java）、构建脚本与
+测试代码，以 MIT License 发布，全文见 LICENSE。
+
+二、Overflow 牌组 —— 米哈游素材二创（重点）
+----------------------------------------------------------------
+位置：
+  app/decks/overflow2/
+  app/www/assets/deckimg/overflow2/
+
+Overflow 牌组是引用米哈游（miHoYo）旗下游戏素材进行的二次创作（二创）。
+其中涉及的角色形象、图案、名称、世界观元素等知识产权，归米哈游及原权利方
+所有。
+
+  · 本项目与米哈游没有任何关联，也未获得米哈游的官方授权或背书；
+  · 相关素材仅用于个人学习、研究与交流，不得用于任何商业用途；
+  · Overflow 牌组不适用 MIT License，也不构成任何形式的授权；
+  · 如权利人认为本仓库中的内容侵犯了其权益，请通过仓库 Issue 联系，
+    我们会在确认后立即移除相关素材。
+
+三、其他牌面与插画
+----------------------------------------------------------------
+  · Love & Armour（app/decks/lovearmour/、
+    app/www/assets/deckimg/lovearmour/）：本项目制作与整理的原创牌面，
+    随项目分发，仅供个人非商业使用。
+  · Motif（app/decks/xiangchao/、
+    app/www/assets/deckimg/xiangchao/）：本项目制作与整理的原创牌面，
+    随项目分发，仅供个人非商业使用。
+  · 星语（app/decks/star/）：本项目制作的符号与牌面。
+  · 易经（app/decks/gua64/）、周易（app/decks/zy64/）：卦名、卦辞与卦象
+    属于公有领域内容；牌面排版与图形由本项目制作。
+  · 牌背 SVG、质感图（app/www/assets/tex/）与界面图形：本项目制作。
+
+四、字体
+----------------------------------------------------------------
+app/www/assets/fonts/ 内的 10 款字体均为开源字体，版权归各字体作者所有，
+使用与再分发请遵守对应字体的许可（主要为 SIL Open Font License 1.1）：
+
+  · Smiley Sans（得意黑）— SIL OFL 1.1，atelierAnchor
+  · Noto Sans SC — SIL OFL 1.1，Adobe / Google
+  · Noto Serif SC — SIL OFL 1.1，Adobe / Google
+  · LXGW WenKai（霞鹜文楷）— SIL OFL 1.1，LXGW
+  · Yozai（悠哉字体）— SIL OFL 1.1，LXGW
+  · Ma Shan Zheng（马善政毛笔楷书）— SIL OFL 1.1
+  · Long Cang（龙藏体）— SIL OFL 1.1
+  · Zhi Mang Xing（志莽行书）— SIL OFL 1.1
+  · ZCOOL XiaoWei（站酷小薇体）— SIL OFL 1.1
+  · Huiwen-mincho（汇文明朝体）— Public Domain
+
+五、文档与截图
+----------------------------------------------------------------
+README、docs/ 下的说明文字与截图，以 CC BY 4.0 提供（引用时请注明
+「猫卡 CatCard」及仓库地址）。截图中的牌面仍受上述第三条约束。
+
+六、非官方声明
+----------------------------------------------------------------
+猫卡是个人项目，不是任何公司或平台的官方产品。项目名称、图标与界面设计
+归项目作者所有；第三方素材的权利归各自权利人所有。

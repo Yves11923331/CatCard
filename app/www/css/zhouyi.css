@@ -1,0 +1,310 @@
+/* ============================================================
+ * 猫卡 · 周易页专用样式（2026-10-01）
+ * ------------------------------------------------------------
+ * 这是**新增的一个文件**，一行都不动 main.css / v3.css ——
+ * 周易桌那 113 行 DOM 用的是和占卜桌完全相同的 class，所以版面天然 1:1；
+ * 这里只放"占卜桌没有的东西"：右下角两颗按钮、骰子面板、易经查看器。
+ * 用户的红线：不许影响主页布局 → 本文件所有选择器都以 .zy- 开头（只命中周易页内部）。
+ * ============================================================ */
+
+/* ---- 顶栏那两颗（现代胶囊：图标 + 两行小字）---- */
+.zy-top-btn {
+  /* ★ 2026-11-06（C08）：高度 34 → 44（可点下限；页面头随之 58，与 A13 一致）。
+     ★ 2026-11-06：原来写死 `background:#fff`，字色却走 var(--ink) —— 深色主题下 --ink 翻成浅色，
+     就成了「白底 + 浅灰字」，顶栏这两颗基本看不见（无头 Chromium 深色实测复现）。
+     改用面板 token：浅色 #ffffff / 深色 #1b1f24，字色跟着翻，两个主题都对。 */
+  display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 11px;
+  border-radius: 11px; border: 1px solid var(--line-hard, #d8dbe0);
+  background: var(--panel, #fff); color: var(--ink, #1c2536);
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.zy-top-btn:active { transform: scale(.97); }
+.zy-top-btn svg { width: 17px; height: 17px; flex: none; color: var(--ink-2, #4a5261); }
+.zy-top-btn span { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.18; }
+.zy-top-btn em { font-style: normal; font-weight: 400; font-size: 9.5px; color: var(--ink-3, #7b8290); }
+
+/* ---- 桌面上的一颗骰子（点击出现→转动→停下；同时只存在一颗）----
+   位置刻意放**左下**：右下角是占卜桌自己的「选牌台」按钮，放右下会重叠（用户第 2 条）。 */
+/* 用户：把骰子那个弹窗 ×0.7，并挪到**左上角**（原来在左下、154px 宽） */
+.zy-dice-box {
+  --zy-dice-w: 108px;                 /* 154 × 0.7 ≈ 108 */
+  /* ⚠ top 必须是"顶栏高度 + 状态栏安全区 + 12px"：
+     真机上顶栏自己带 env(safe-area-inset-top)（状态栏那一条），写死 60px 会钻到顶栏底下（用户报过）。 */
+  position: absolute; left: 14px;
+  top: calc(var(--bar-h, 58px) + env(safe-area-inset-top, 0px) + 4px);   /* ★ 2026-11-06：写死 47 → --bar-h（A13 页面头 58）*/
+  width: var(--zy-dice-w); padding: 6px 6px 0;
+  border-radius: 14px;
+  /* ★ 2026-11-06：原来是写死的 rgba(255,255,255,.97) —— 深色主题下这块 108×181 的骰子面板
+     是一整块白板，上面的浅色字基本读不出来（深色实测已复现）。改用面板 token 打底，
+     需要的那点"半透"用 color-mix 跟桌布混，浅色主题视觉基本不变。 */
+  background: color-mix(in srgb, var(--panel, #fff) 97%, transparent);
+  border: 1px solid var(--line, #eceef1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .15);
+  z-index: 6;
+}
+.zy-dice-box.is-hidden { display: none; }
+#zy-dice-page { display: flex; flex-direction: column; }
+/* 骰子模块自带的标题条 / 选骰托盘 / 「掷」按钮在这一页都不要：
+   出现即转动、点一下就重掷（见 zhouyi.js） */
+#zy-dice-page .lib-head,
+#zy-dice-page .dz-tray,
+#zy-dice-page .dz-bar,
+#zy-dice-page .dz-res { display: none; }
+#zy-dice-page .dz-stage { flex: none; height: 94px; min-height: 94px; cursor: pointer; }
+#zy-dice-page .dz-2d { flex: none; height: 94px; min-height: 94px; cursor: pointer; }
+.zy-dice-cap { text-align: center; font-size: 10px; line-height: 1.5; color: var(--ink-3, #7b8290); padding: 0 0 6px; }
+.zy-dice-cap b { color: var(--accent, #5b7cfa); font-size: 12.5px; }
+.zy-dice-cap.is-idle { opacity: .85; }
+/* 独立错误行：可长按选中复制；消息长了可以滚 */
+.zy-dice-err {
+  margin: 2px 2px 6px; padding: 5px 6px; border-radius: 8px;
+  /* ★ 2026-11-06（D6）：手写红 → 语义 token（值等同于原值，深色自动跟）*/
+  background: var(--danger-soft, rgba(229, 72, 77, .08)); color: var(--danger-ink, #b4232a);
+  font-size: 9.5px; line-height: 1.4; word-break: break-all;
+  max-height: 96px; overflow-y: auto;
+  user-select: text; -webkit-user-select: text;
+}
+.zy-dice-err.is-hidden { display: none; }
+
+/* ---- 蒙层 + 面板（★ 这两条被我上一轮重写时误删过：
+       结果面板变成 position:static 的普通块，在场景的 flex 列里吃掉 769px，
+       把桌面压成 11px —— 桌面上所有交互跟着"像死了一样"。别再删。 ---- */
+.zy-mask {
+  position: absolute; inset: 0; z-index: 40;
+  background: rgba(20, 22, 26, .28);
+  transition: opacity .18s ease;
+}
+.zy-mask.is-hidden { opacity: 0; pointer-events: none; }
+.zy-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 41;
+  max-height: 78%; display: flex; flex-direction: column;
+  background: #fff; border-radius: 18px 18px 0 0;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, .20);
+  transition: transform .22s cubic-bezier(.2, .8, .3, 1);
+}
+.zy-panel.is-hidden { transform: translateY(104%); pointer-events: none; }
+/* ★ 2026-11-17：收起后**必须把投影也摘掉**。
+   面板是往屏下平移 104% 藏起来的，但 `box-shadow: 0 -12px 32px` 不跟着走 ——
+   面板顶边落在 878.6px，投影上缘 = 878.6 - 12 - 32 = 834.6px，
+   正好从屏幕最后 ~18px 漏进视口，看起来就是「页面底部一道浅灰残影」。
+   隐藏态留着投影没有任何意义（面板整块都在屏下），摘掉即可。 */
+.zy-panel.is-hidden { box-shadow: none; }
+#zy-book-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* ---- 易经查看器 ---- */
+#zy-book-panel { height: 84%; }
+#zy-book-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.zyb-head {
+  flex: none; display: flex; align-items: center; gap: 11px;
+  padding: 14px 14px 12px;
+}
+/* 图标按钮（用户：老的「‹ 目录 / ✕ 收起」太难看） */
+.zyb-ico {
+  flex: none; width: 44px; height: 44px; padding: 0;   /* ★ 2026-11-06（C08）：34 → 44，可点下限 */
+  border-radius: 11px; border: 1px solid var(--line-hard, #d8dbe0);
+  /* 同 .zy-top-btn：深色下白底 + 浅色字看不见，改用面板 token */
+  background: var(--panel, #fff); color: var(--ink, #1c2536);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.zyb-ico:active { transform: scale(.95); background: var(--fill, #f2f3f5); }
+.zyb-ico svg { width: 18px; height: 18px; }
+.zyb-title { flex: 1; min-width: 0; font-size: 17px; font-weight: 700; line-height: 1.2; }
+.zyb-title span { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 400; color: var(--ink-3, #7b8290); }
+.zyb-search {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  margin: 10px 14px 6px; padding: 8px 12px; border-radius: 11px;
+  background: var(--fill, #f2f3f5); color: var(--ink-3, #7b8290);
+}
+.zyb-search svg { width: 17px; height: 17px; flex: none; }
+.zyb-search input {
+  flex: 1; min-width: 0; border: 0; background: transparent; font: inherit;
+  font-size: 14px; color: var(--ink, #1c2536); outline: none; -webkit-appearance: none;
+}
+.zyb-search input::-webkit-search-cancel-button { display: none; }
+.zyb-clr { border: 0; background: transparent; color: var(--ink-3, #7b8290); font-size: 15px; }
+.zyb-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 14px 20px; }
+.zyb-cnt { font-size: 12px; color: var(--ink-3, #7b8290); padding: 2px 2px 8px; }
+.zyb-none { padding: 26px 8px; font-size: 13px; line-height: 1.7; color: var(--ink-3, #7b8290); }
+/* 列表：卡片式（原来是"下边框老列表"，用户说难看） */
+.zyb-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  margin-bottom: 8px; padding: 12px;
+  border: 0; border-radius: 14px;
+  background: var(--panel, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  color: var(--ink, #1c2536); font: inherit; cursor: pointer;
+}
+.zyb-row:active { transform: scale(.995); }
+.zyb-row.is-draw { background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.zyb-art { flex: none; width: 30px; height: 30px; color: var(--ink-2, #4a5261); }
+.zyb-art svg { width: 100%; height: 100%; display: block; }
+.zyb-art.is-big { width: 58px; height: 58px; color: var(--ink, #1c2536); }
+.zyb-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.zyb-nm { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; }
+.zyb-nm em { font-style: normal; font-weight: 400; font-size: 11.5px; color: var(--ink-3, #7b8290); }
+.zyb-badge {
+  font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--accent, #5b7cfa);
+  border: 1px solid currentColor; border-radius: 999px; padding: 0 6px; line-height: 1.5;
+}
+/* ★ 2026-11-06：字色原来写死 #fff，而底色走 var(--primary) —— 深色主题下 --primary 翻成 #f2f4f6，
+   于是「近白底 + 白字」，这颗「本卦/变爻」徽标的文字直接消失（深色实测复现）。
+   改成跟 --bg 走：浅色主题深底白字、深色主题浅底深字，两个主题都读得出来。
+   （和 v3.css 里 .ps-left 角标同一个修法 —— 那里踩过一模一样的坑。） */
+.zyb-badge.is-yao { color: var(--bg, #fff); background: var(--accent, #5b7cfa); border-color: transparent; }
+.zyb-gua { font-size: 12px; color: var(--ink-3, #7b8290); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zyb-no { flex: none; font-size: 12px; color: var(--ink-3, #7b8290); font-variant-numeric: tabular-nums; }
+/* ---- 详情页 hero：卦序牌头（2026-11-17，用户从 A/B/C 里选了 A）
+   整块（卦象 + 卦名 + 拼音 + 骰子行）收进一张纸面卡片，纸面与下面 .zyb-block 完全同一套：
+   --panel 底 + 1px --line 边 + 12 圆角（深色由 --panel 自己翻，不写第二份）。
+   骰子行原来是全页唯一的有彩色字（--accent 蓝）→ 改成灰胶囊：颜色只留给牌面。
+   右上角「第 N 卦」由 oneHTML() 输出（.zyb-hero-no），与顶部标题同一个 h.no，不另算。 */
+.zyb-hero {
+  display: flex; align-items: center; gap: 15px; padding: 14px 14px 13px;
+  position: relative;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+}
+.zyb-hero-nm { font-size: 21px; font-weight: 800; letter-spacing: .5px; display: flex; align-items: baseline; gap: 8px; }
+.zyb-hero-nm em { font-style: normal; font-size: 12.5px; font-weight: 400; color: var(--ink-3, #7b8290); }
+/* 右上角「第 N 卦」：极淡、等距小字，像印在纸上 */
+.zyb-hero-no {
+  position: absolute; right: 13px; top: 11px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 1.6px;
+  color: var(--ink-3, #7b8290); font-variant-numeric: tabular-nums;
+}
+/* 骰子行 → 小胶囊（无骰子时同一颗，边框改虚线，文案不变） */
+.zyb-hero-y {
+  display: inline-block; margin-top: 7px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--line-hard, #d8dbe0);
+  color: var(--ink-2, #4a5261);
+  font-size: 11.5px; font-weight: 600; letter-spacing: .2px;
+}
+.zyb-hero-y.is-dim { border-style: dashed; color: var(--ink-3, #7b8290); font-weight: 400; }
+.zyb-sec { margin: 16px 2px 8px; font-size: 12px; font-weight: 700; color: var(--ink-3, #7b8290); letter-spacing: 1px; }
+.zyb-block, .zyb-yao { border: 1px solid var(--line, #eceef1); border-radius: 12px; padding: 11px 13px; background: #fff; }
+.zyb-gua-tx { font-size: 14.5px; font-weight: 700; line-height: 1.62; }
+.zyb-gua-tr { margin-top: 5px; font-size: 13.5px; line-height: 1.66; color: var(--ink-2, #4a5261); }
+.zyb-gua-nt, .zyb-yao-nt {
+  margin-top: 7px; padding-left: 9px; border-left: 2px solid var(--line-hard, #d8dbe0);
+  font-size: 12px; line-height: 1.66; color: var(--ink-3, #7b8290);
+}
+.zyb-yao { margin-bottom: 8px; }
+.zyb-yao.is-hit {
+  border-color: var(--accent); background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+.zyb-yao-lb { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3, #7b8290); }
+.zyb-yao-lb b { font-size: 13px; color: var(--ink, #1c2536); }
+.zyb-yao-tx { margin-top: 4px; font-size: 14px; font-weight: 600; line-height: 1.62; }
+.zyb-yao-tr { margin-top: 3px; font-size: 13px; line-height: 1.64; color: var(--ink-2, #4a5261); }
+.zyb-note { border-radius: 12px; padding: 11px 13px; background: var(--fill, #f2f3f5);
+  font-size: 13px; line-height: 1.72; color: var(--ink-2, #4a5261); }
+.zyb-note.is-insp { background: var(--accent-soft); color: var(--ink, #1c2536); }
+
+/* 深色主题（跟着 App 的 html[data-ui-theme] 走） */
+html[data-ui-theme="dark"] .zy-fab-btn { background: #1d2126; border-color: #333a42; color: #e8eaed; }
+html[data-ui-theme="dark"] .zy-panel { background: #14171a; }
+html[data-ui-theme="dark"] .zyb-block,
+html[data-ui-theme="dark"] .zyb-yao { background: var(--panel); border-color: var(--line-hard); }
+
+/* ============================================================
+ * 2026-11-17：顶栏两颗「方案 A · 极简线性对」+ 首次进入四步引导
+ * ------------------------------------------------------------
+ * 只覆盖本页 .zy-top-btn 的形态，**不动** .bar-btn / .btn-mini 等共有规则；
+ * 颜色全走 token（--ink-2 / --fill / --panel / --line），深浅色自动翻。
+ * ============================================================ */
+
+/* ---- 顶栏两颗：44×44 热区、纯线稿、不铺底不画框（方案 A） ---- */
+.zy-top-btn.is-sym {
+  position: relative; width: 44px; min-width: 44px; height: 44px;
+  padding: 0; gap: 0; justify-content: center; border-radius: 11px;
+}
+.zy-top-btn.is-sym:active { transform: scale(.96); }
+.zy-top-btn.is-line { background: transparent; border-color: transparent; box-shadow: none; }
+.zy-top-btn.is-line svg { width: 24px; height: 24px; color: var(--ink-2, #4a5261); }
+.zy-top-btn.is-line:active { background: var(--fill, #f2f3f5); }
+/* 符号化之后 #zy-dice-hint 仍然留在 DOM 里（zhouyi.js 会往里写爻名），只是看不见 */
+.zy-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* ---- 四步引导：一个蒙层 + 亮洞 + 文案卡（不做点击穿透） ----
+   ★ 2026-11-17（用户）：卡片的字体/字号/行高/内边距/圆角/阴影/按钮尺寸与配色，
+     逐项对齐占卜桌那套首次引导 —— 基准是 v3.css §41 的 .et-card / .et-ok（那里一行不改），
+     目标是"一眼看上去是同一套引导系统"。改这里的数值前先看 §41，别各调各的。 */
+.zy-guide { position: absolute; inset: 0; z-index: 60; background: rgba(20, 24, 30, .34); }
+.zy-guide.is-hidden { display: none; }
+/* 有高亮目标时，压暗交给亮洞那圈 9999px 投影，蒙层自己必须透明 */
+.zy-guide.has-hole { background: transparent; }
+.zy-guide-hole {
+  /* ★ 2026-11-17：几何由 zhouyi.js 的 gzPlace() 现算 —— 亮洞贴在**目标内侧**
+     （四周内缩 3px、圆角 = 目标圆角 − 3 做同心）。这里的 8px 只是 JS 没跑起来时的兜底。 */
+  display: none; position: absolute; border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(20, 24, 30, .34),
+              0 0 0 1.5px rgba(255, 255, 255, .92),
+              0 0 20px rgba(110, 160, 255, .32);
+  transition: left .18s ease, top .18s ease, width .18s ease, height .18s ease,
+              border-radius .18s ease;
+}
+.zy-guide.has-hole .zy-guide-hole { display: block; }
+.zy-guide-card {
+  position: absolute; left: 16px; right: 16px; padding: 16px 16px 14px;
+  background: var(--panel, #fff); border: 1px solid var(--line, #eceef1);
+  border-radius: 16px; box-shadow: var(--sh-lift, 0 18px 40px rgba(20, 24, 30, .18));
+  animation: etPop .26s cubic-bezier(.2, .8, .3, 1);   /* 与 .et-card 同一条动画 */
+}
+/* 第 1 步：居中的小卡（再用 .et-card 的弹出动画会和 -50% 位移打架，这里不加） */
+.zy-guide-card.is-center {
+  left: 50%; right: auto; top: 50%; bottom: auto;
+  width: min(320px, calc(100% - 48px)); transform: translate(-50%, -50%);
+  animation: none;
+}
+.zy-guide-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* 进度 / 跳过：跟 .et-card 里的小字同一档（比正文小、颜色退到 --ink-3，不抢眼） */
+.zy-guide-step { font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--ink-3, #7b8290); }
+.zy-guide-skip {
+  border: 0; background: transparent; padding: 4px 2px;
+  font: inherit; font-size: 11px; color: var(--ink-3, #7b8290); cursor: pointer;
+}
+/* 标题 / 正文：数值照抄 .et-title / .et-desc（15px·800·.4px / 12.5px·1.8） */
+.zy-guide-title { margin-top: 7px; font-size: 15px; font-weight: 800; letter-spacing: .4px; color: var(--ink, #1c2536); }
+.zy-guide-desc { margin-top: 7px; font-size: 12.5px; line-height: 1.8; color: var(--ink-2, #4a5261); }
+/* 主按钮：尺寸/配色/字重/字距照抄 .et-ok */
+.zy-guide-ok {
+  margin-top: 13px; width: 100%; height: 42px; border: 0; border-radius: 12px;
+  background: var(--ink, #1c2536); color: #fff;
+  font-family: inherit; font-size: 13.5px; font-weight: 700; letter-spacing: 1px; cursor: pointer;
+}
+.zy-guide-ok:active { transform: scale(.98); }
+/* 深色：和 .et-card / .et-ok 的同两条深色规则一模一样（v3.css §41 末尾） */
+html[data-ui-theme="dark"] .zy-guide { background: rgba(0, 0, 0, .5); }
+html[data-ui-theme="dark"] .zy-guide-hole {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .5),
+              0 0 0 1.5px rgba(255, 255, 255, .92),
+              0 0 20px rgba(110, 160, 255, .32);
+}
+html[data-ui-theme="dark"] .zy-guide-card { background: #14171a; border-color: rgba(255, 255, 255, .10); }
+html[data-ui-theme="dark"] .zy-guide-ok { background: #f2f4f6; color: #14171a; }
+
+/* ============================================================
+ * 2026-11-17：顶栏「周易」主标题 + 牌堆名小字
+ * ------------------------------------------------------------
+ * 口径与别的子页一致：.lib-head .lib-title = 18px / 700（main.css:559），
+ * 小字照 .lib-title .lib-sub（v3.css:1014）= 11px / 400 / --ink-3 / 字距 .3
+ * （这里取 11.5px，长名字在 393 宽上多容纳半字，仍在同一档）。
+ * ⚠ 只在本页作用域里写死配色：.table-bar 里没有 .lib-title 的配色规则，
+ *   直接套裸类会掉回浏览器默认样式（历史坑）。main.css / v3.css 一个字没改，
+ *   占卜桌的 .table-deck-name（13px/600）原样。
+ * ============================================================ */
+#scene-zhouyi .table-bar .zy-title {
+  flex: 1 1 auto; min-width: 0;
+  display: inline-flex; align-items: baseline; gap: 8px;
+  font-size: 18px; font-weight: 700; line-height: 1.2; letter-spacing: .4px;
+  color: var(--ink, #1c2536); white-space: nowrap;
+}
+/* 牌堆名：一行省略号截断；min-width:0 让它先被压缩，标题不会被挤掉 */
+#scene-zhouyi .table-bar .zy-title-sub {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11.5px; font-weight: 400; letter-spacing: .3px;
+  color: var(--ink-3, #7b8290);
+}

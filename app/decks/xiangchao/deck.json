@@ -1,0 +1,303 @@
+{
+ "format": 1,
+ "key": "xiangchao",
+ "name": "Motif",
+ "oldNames": [],
+ "order": 2,
+ "onTable": true,
+ "addIfMissing": true,
+ "seed": true,
+ "symbols": "none",
+ "back": {
+  "template": "xiangchao",
+  "color": "#cf6a55"
+ },
+ "note": "2026-11-19 新建：按《象潮：一套可组合的占卜意象体系》做，24 枚原象（六类 × 四枚），无逆位。单象给动势、领域给落点、位置给作用、组合给关系。先不入包（不打包.txt 有 xiangchao）；牌面图只放 decks/xiangchao/faces/，没有进 www，上架前要搬进 www/assets/deckimg/xiangchao。；2026-11-19 第二版画面：明亮厚涂油画（不用黑，暗部钴蓝/紫罗兰），主体占六成；牌名改深色标签底 + 米白字。旧版（深蓝水面）在 临时/象潮-20261119/旧版-水面/。；2026-11-19 定名 Motif（英文，取自「意象」的 motif 路线）；order=2（Love & Armour 之后、Overflow 之前）；删除使用说明（manual）；接入包（不打包.txt 移除、DECK_PATCHES 登记、24 张图搬进 www）；2026-11-19 牌背同批重做：明亮厚涂油画抽象（暖米白底 + 珊瑚/孔雀蓝/柠檬黄笔触圆环 + 金环金点），back.svg 改为嵌 _back.jpg。；2026-11-19 牌义逐张重排：动势 / 潜能·偏斜 / 关系·事业·财富·身心 三段，段间空行；不设说明页；2026-11-19 卡名与关键词都不上牌面（cardStyle.nameOn=false / kwOn=false）；2026-11-19 牌义改回原版 md：意象 + 核心含义（不加潜能/偏斜/领域）；说明页=跨领域映射 + 两象组合（含组合示例），无牌阵；2026-11-19 牌背/牌面纸边默认关（backEdge / faceEdge / cardStyle.faceEdge = false）",
+ "cards": [
+  {
+   "name": "种",
+   "keyword": "潜藏",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "种子：潜能、新机会、尚未显形。",
+   "color": 4,
+   "image": "assets/deckimg/xiangchao/01.jpg"
+  },
+  {
+   "name": "芽",
+   "keyword": "初动",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "破土的新芽：初步行动、试探、脆弱进展。",
+   "color": 4,
+   "image": "assets/deckimg/xiangchao/02.jpg"
+  },
+  {
+   "name": "火星",
+   "keyword": "触发",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "飞散的火点：灵感、冲动、快速触发。",
+   "color": 3,
+   "image": "assets/deckimg/xiangchao/03.jpg"
+  },
+  {
+   "name": "泉",
+   "keyword": "源头",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "地下涌出的泉水：内在资源、恢复力、源头。",
+   "color": 4,
+   "image": "assets/deckimg/xiangchao/04.jpg"
+  },
+  {
+   "name": "镜",
+   "keyword": "反馈",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "镜面：反馈、自我认识、投射。",
+   "color": 9,
+   "image": "assets/deckimg/xiangchao/05.jpg"
+  },
+  {
+   "name": "雾",
+   "keyword": "未明",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "遮蔽的雾：信息不足、暧昧、暂时无法判断。",
+   "color": 9,
+   "image": "assets/deckimg/xiangchao/06.jpg"
+  },
+  {
+   "name": "灯",
+   "keyword": "线索",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "手提灯：有限但可用的线索、局部清晰。",
+   "color": 9,
+   "image": "assets/deckimg/xiangchao/07.jpg"
+  },
+  {
+   "name": "面具",
+   "keyword": "角色",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "遮住面容的面具：角色、保护、隐藏动机。",
+   "color": 9,
+   "image": "assets/deckimg/xiangchao/08.jpg"
+  },
+  {
+   "name": "桥",
+   "keyword": "联结",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "跨越两岸的桥：联结、协商、过渡。",
+   "color": 3,
+   "image": "assets/deckimg/xiangchao/09.jpg"
+  },
+  {
+   "name": "结",
+   "keyword": "牵连",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "绳索打成的结：牵连、承诺、纠缠。",
+   "color": 3,
+   "image": "assets/deckimg/xiangchao/10.jpg"
+  },
+  {
+   "name": "市集",
+   "keyword": "交换",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "人群交换之处：交易、交换、资源流动。",
+   "color": 3,
+   "image": "assets/deckimg/xiangchao/11.jpg"
+  },
+  {
+   "name": "信",
+   "keyword": "传递",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "被递交的信件：消息、邀约、承诺的传递。",
+   "color": 3,
+   "image": "assets/deckimg/xiangchao/12.jpg"
+  },
+  {
+   "name": "风",
+   "keyword": "变化",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "改变方向的风：变化、传播、外部影响。",
+   "color": 5,
+   "image": "assets/deckimg/xiangchao/13.jpg"
+  },
+  {
+   "name": "潮",
+   "keyword": "周期",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "有涨落的水势：周期、情绪、群体趋势。",
+   "color": 5,
+   "image": "assets/deckimg/xiangchao/14.jpg"
+  },
+  {
+   "name": "轮",
+   "keyword": "循环",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "转动的轮：重复、进程、时机循环。",
+   "color": 5,
+   "image": "assets/deckimg/xiangchao/15.jpg"
+  },
+  {
+   "name": "炉",
+   "keyword": "熔炼",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "燃烧与熔炼之处：投入、磨合、转化、消耗。",
+   "color": 5,
+   "image": "assets/deckimg/xiangchao/16.jpg"
+  },
+  {
+   "name": "墙",
+   "keyword": "界限",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "边界与阻隔：限制、保护、暂时无法通过。",
+   "color": 19,
+   "image": "assets/deckimg/xiangchao/17.jpg"
+  },
+  {
+   "name": "刃",
+   "keyword": "决断",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "切割的刀锋：决断、区分、止损。",
+   "color": 19,
+   "image": "assets/deckimg/xiangchao/18.jpg"
+  },
+  {
+   "name": "秤",
+   "keyword": "衡量",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "平衡两端的秤：衡量、公平、成本与收益。",
+   "color": 19,
+   "image": "assets/deckimg/xiangchao/19.jpg"
+  },
+  {
+   "name": "锁",
+   "keyword": "保留",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "锁住的门扣：保留、受限、尚未获得许可。",
+   "color": 19,
+   "image": "assets/deckimg/xiangchao/20.jpg"
+  },
+  {
+   "name": "根",
+   "keyword": "基础",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "扎入土中的根系：基础、身体、传统、长期支撑。",
+   "color": 18,
+   "image": "assets/deckimg/xiangchao/21.jpg"
+  },
+  {
+   "name": "巢",
+   "keyword": "归属",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "孵育生命的巢：家庭、安全感、照料与归属。",
+   "color": 18,
+   "image": "assets/deckimg/xiangchao/22.jpg"
+  },
+  {
+   "name": "舟",
+   "keyword": "迁移",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "行于水上的舟：迁移、探索、主动改变位置。",
+   "color": 18,
+   "image": "assets/deckimg/xiangchao/23.jpg"
+  },
+  {
+   "name": "星",
+   "keyword": "愿景",
+   "symbol": null,
+   "sym": null,
+   "faceText": null,
+   "meaning": "遥远的星光：愿景、方向、长期理想。",
+   "color": 18,
+   "image": "assets/deckimg/xiangchao/24.jpg"
+  }
+ ],
+ "cardStyle": {
+  "nameVy": 88,
+  "nameH": "c",
+  "nameFs": 92,
+  "nameBg": "#171310",
+  "nameBgA": 55,
+  "nameFont": "song",
+  "nameBgStyle": "papercut",
+  "kwVy": 8,
+  "kwH": "c",
+  "kwFs": 62,
+  "kwBg": "#171310",
+  "kwBgA": 55,
+  "kwFont": "song",
+  "kwBgStyle": "plain",
+  "autoFit": true,
+  "nameWeight": 700,
+  "kwWeight": 700,
+  "kwOn": false,
+  "faceEdge": false,
+  "faceTex": null,
+  "faceTexA": 45,
+  "imgScale": 100,
+  "imgX": 0,
+  "imgY": 0,
+  "imgFilter": "none",
+  "nameColor": "#f4e8d0",
+  "kwColor": "#f4e8d0",
+  "nameOn": false
+ },
+ "manual": {
+  "title": "Motif · 使用说明",
+  "sections": [
+   {
+    "title": "一、跨领域映射",
+    "body": "符号保留核心动势，由问题领域决定它落在哪里。\n\n- 桥：关系 修复联系、沟通；事业 合作、跨团队衔接；财富 资金往来、渠道；身心 寻求支持、建立连接。\n- 雾：关系 关系状态未明；事业 目标或职责不清；财富 风险和账目不透明；身心 疲惫、混乱或难以命名的感受。\n- 轮：关系 反复模式、关系周期；事业 流程重复、阶段转换；财富 收入或支出周期；身心 习惯循环、精力起伏。\n- 秤：关系 付出是否对等；事业 工作量与回报；财富 收支与风险权衡；身心 负担是否过重。\n- 巢：关系 亲密、安全与照料；事业 团队归属、稳定环境；财富 家庭支出、资产安全；身心 休息、照顾与恢复。\n- 舟：关系 关系距离、共同迁移；事业 转岗、换环境、探索；财富 转移资产、开辟新渠道；身心 改变生活节奏或环境。\n\n例如，「舟」的核心是改变位置。在关系中可指距离或共同迁移，在事业中可指转岗或换环境，在身心领域则可指改变生活节奏。"
+   },
+   {
+    "title": "二、两象组合",
+    "body": "两枚意象相遇时，先判断它们之间的关系，再生成含义；组合不是关键词并排相加。\n\n- 生发：一枚意象为另一枚提供条件。泉 + 种：资源正在滋养一个尚未成熟的机会。\n- 转化：前一枚意象变成后一枚意象。炉 + 刃：经历磨合后，形成明确决断。\n- 冲突：两股力量彼此牵制。舟 + 根：想离开熟悉环境，但现有依托仍然重要。\n- 显隐：一枚意象照出、遮蔽或揭示另一枚。灯 + 雾：虽未完全明朗，但已有线索缩小判断范围。\n- 交换：双方在付出、信息或资源上互相影响。市集 + 秤：需要核算交换是否公平。\n- 重复：同一动势延续或被循环放大。轮 + 结：反复出现的牵连模式，可能需要重新处理。\n\n方向也很重要：灯 → 雾可以表示逐渐失去清晰；雾 → 灯则表示逐步获得线索。使用实体牌时，可用牌序表达方向；只抽取两枚符号时，由抽取顺序决定先后。\n\n# 组合示例\n\n- 信 + 面具：信息可能只呈现部分立场；区分正式说法与真实意图。\n- 桥 + 刃：沟通之后需要作出边界清晰的决定；和解不等于恢复原状。\n- 潮 + 轮：情绪或事件正在重复一个周期；观察周期何时转向。\n- 墙 + 种：新机会受到现实条件限制，可能需要先准备资源。\n- 星 + 秤：愿景需要与现实成本对照，理想可以保留，路径则可调整。\n- 巢 + 风：家庭或安全结构正在变化，可能需要重新安排生活。"
+   }
+  ]
+ },
+ "backEdge": false,
+ "faceEdge": false
+}

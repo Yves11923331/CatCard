@@ -1,0 +1,285 @@
+/* ============================================================
+ * 猫卡 · 启动页（法阵 → 抽牌，2026-11-14 定稿）
+ * ------------------------------------------------------------
+ * 一座四层星盘逐圈画出、旋转，收拢成一粒光；牌从那粒光里长出来，
+ * 墨色牌背翻到白纸牌面（牌面只有一行 MOKA），字标最后落下。
+ *
+ * 五条硬规矩：
+ *   1. 只用黑白灰 + 中性墨色（星盘取暖灰，不是新配色 —— 颜色留给牌面）；
+ *   2. 尺寸按 --fx（法阵直径）/ --sd-w（牌宽）走，任何机型等比；
+ *   3. 只动 transform / opacity（合成层动画），低端机也不掉帧；
+ *   4. ★ 全层不用 box-shadow（用户：「阴影太容易显脏」）。
+ *      层次只靠：1px 边线 / 内框 hairline / 受光边（mask 渐变）/ 纸面渐变；
+ *   5. 法阵里一百多个元素由 js/splash.js 现场生成（刻度、地支、罗马数字、弧段），
+ *      静态骨架只留几条主圆 —— 免得 index.html 里堆一大坨。
+ *
+ * 摘掉这一层的地方只有一个：js/splash.js 的 fade()（由 app.js 的
+ * bootReveal 触发，外加它自己的最长 8.5s 兜底）。
+ * ============================================================ */
+
+#splash {
+  /* 法阵直径：390dp 屏上 384，小屏按 96vw 收，大屏封顶 420 */
+  --fx: clamp(300px, 96vw, 420px);
+  /* 抽出来的那张牌：390dp 屏上 186 */
+  --sd-w: clamp(140px, 47vw, 198px);
+  --sd-h: calc(var(--sd-w) * 1.5);
+  --sd-r: calc(var(--sd-w) * .043);
+
+  /* 牌背：三段渐变，最暗压在右下，像一张被灯从左上照着的纸 */
+  --sp-ink-1: #262d36;
+  --sp-ink-2: #1c222a;
+  --sp-ink-3: #151a20;
+  --sp-edge: rgba(255, 255, 255, .15);
+  --sp-hair: rgba(255, 255, 255, .075);
+  --sp-rim: rgba(255, 255, 255, .55);
+  --sp-wheel: #c3bcae;
+
+  /* 牌面：白纸 + 一行 MOKA */
+  --sp-paper: #f7f6f2;
+  --sp-paper-edge: rgba(20, 24, 30, .28);
+  --sp-paper-hair: rgba(20, 24, 30, .09);
+  --sp-paper-ink: rgba(20, 24, 30, .40);
+
+  /* 法阵的颜色：浅色主题下是墨线（暖灰在白底上会看不见） */
+  --sp-line: rgba(20, 24, 30, .55);
+  --sp-star: rgba(20, 24, 30, .22);
+
+  position: fixed; inset: 0;
+  z-index: 99990;
+  overflow: hidden;
+  background: var(--bg);
+  perspective: 1200px;
+  opacity: 1;
+  transition: opacity .46s cubic-bezier(.4, 0, .2, 1);
+  will-change: opacity;
+  -webkit-user-select: none; user-select: none;
+}
+#splash.is-out { opacity: 0; }
+
+html[data-ui-theme="dark"] #splash {
+  --sp-ink-1: #333c47;
+  --sp-ink-2: #29313a;
+  --sp-ink-3: #212830;
+  --sp-edge: rgba(255, 255, 255, .17);
+  --sp-hair: rgba(255, 255, 255, .085);
+  --sp-rim: rgba(255, 255, 255, .50);
+  --sp-wheel: #d6d0c2;
+  --sp-paper: #f7f8f9;
+  --sp-paper-edge: rgba(0, 0, 0, .30);
+  --sp-paper-ink: rgba(20, 24, 30, .42);
+  --sp-line: #d6d0c2;
+  --sp-star: rgba(255, 255, 255, .55);
+}
+
+/* ---------- 背景：星点 + 中心一团极淡的光 ---------- */
+.sp-sky {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(1.2px 1.2px at 18% 16%, var(--sp-star), rgba(0,0,0,0) 100%),
+    radial-gradient(1px 1px     at 76% 11%, var(--sp-star), rgba(0,0,0,0) 100%),
+    radial-gradient(1.4px 1.4px at 88% 38%, var(--sp-star), rgba(0,0,0,0) 100%),
+    radial-gradient(1px 1px     at 9% 46%,  var(--sp-star), rgba(0,0,0,0) 100%),
+    radial-gradient(1px 1px     at 64% 78%, var(--sp-star), rgba(0,0,0,0) 100%),
+    radial-gradient(1.2px 1.2px at 32% 88%, var(--sp-star), rgba(0,0,0,0) 100%),
+    radial-gradient(1px 1px     at 94% 68%, var(--sp-star), rgba(0,0,0,0) 100%);
+  opacity: 0;
+  animation: sp-sky-in 1.2s ease-out .10s forwards;
+}
+@keyframes sp-sky-in { to { opacity: 1 } }
+
+.sp-glow {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(46% 34% at 50% 41%, rgba(150, 180, 255, .10), rgba(0, 0, 0, 0) 72%);
+  opacity: 0;
+  animation: sp-sky-in 1.1s ease-out .15s forwards;
+}
+html:not([data-ui-theme="dark"]) .sp-glow {
+  background: radial-gradient(46% 34% at 50% 41%, rgba(20, 24, 30, .045), rgba(0, 0, 0, 0) 72%);
+}
+
+/* ============================================================
+   星盘：三层同心结构，内中外三组反向旋转
+   ============================================================ */
+.sp-orrery {
+  position: absolute; left: 50%; top: 41%;
+  width: var(--fx); height: var(--fx);
+  margin-left: calc(var(--fx) * -.5); margin-top: calc(var(--fx) * -.5);
+  color: var(--sp-line);
+  animation: sp-orrery 1.38s cubic-bezier(.24, .6, .24, 1) .05s both;
+}
+@keyframes sp-orrery {
+  0%   { transform: rotate(-28deg) scale(.46); opacity: 0; }
+  16%  { opacity: 1; }
+  70%  { transform: rotate(4deg) scale(1); opacity: 1; }
+  86%  { transform: rotate(2deg) scale(.42); opacity: .9; }
+  100% { transform: rotate(0) scale(.08); opacity: 0; }
+}
+.sp-orrery svg { width: 100%; height: 100%; display: block; overflow: visible }
+
+.sp-rot { transform-origin: 200px 200px; }
+.sp-rot.outer { animation: sp-spin 26s linear infinite }
+.sp-rot.mid   { animation: sp-spin 34s linear infinite reverse }
+.sp-rot.inner { animation: sp-spin 18s linear infinite }
+@keyframes sp-spin { to { transform: rotate(360deg) } }
+
+.sp-dr {
+  fill: none; stroke: currentColor; stroke-width: .85;
+  stroke-dasharray: 100; stroke-dashoffset: 100;
+  animation: sp-draw .5s ease-out forwards;
+}
+@keyframes sp-draw { to { stroke-dashoffset: 0 } }
+
+.sp-tick line, .sp-ray line {
+  stroke: currentColor; stroke-linecap: round;
+  stroke-dasharray: 100; stroke-dashoffset: 100;
+  animation: sp-draw .28s ease-out forwards;
+}
+.sp-tick line { stroke-width: .9 }
+.sp-tick.fine line { stroke-width: .5 }
+.sp-ray line { stroke-width: .7 }
+
+.sp-romans text, .sp-zodiac text {
+  fill: currentColor; font-family: 'MK-Song', serif;
+  text-anchor: middle; dominant-baseline: middle;
+  opacity: 0;
+  animation: sp-text-in .45s ease-out forwards;
+}
+.sp-romans text { font-size: 8px; letter-spacing: .4px }
+.sp-zodiac text { font-size: 10.5px; letter-spacing: .5px }
+@keyframes sp-text-in { to { opacity: .74 } }
+
+.sp-arc {
+  fill: none; stroke: currentColor; stroke-width: .75; stroke-linecap: round;
+  stroke-dasharray: 100; stroke-dashoffset: 100;
+  animation: sp-draw .4s ease-out forwards;
+}
+
+.sp-star {
+  fill: none; stroke: currentColor; stroke-width: .75;
+  stroke-dasharray: 100; stroke-dashoffset: 100;
+  animation: sp-draw .55s ease-out forwards;
+}
+.sp-dot { fill: currentColor; opacity: 0; animation: sp-text-in .35s ease-out forwards }
+
+/* ============================================================
+   牌：法阵收拢后从中心长出来
+   ============================================================ */
+.sp-card {
+  position: absolute; left: 50%; top: 41%;
+  width: var(--sd-w); height: var(--sd-h);
+  margin-left: calc(var(--sd-w) * -.5); margin-top: calc(var(--sd-h) * -.5);
+  opacity: 0; transform: scale(.5);
+  animation: sp-born .72s cubic-bezier(.18, .9, .24, 1) 1.30s forwards;
+}
+@keyframes sp-born {
+  0%   { opacity: 0; transform: scale(.5); }
+  58%  { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.sp-flip {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  animation: sp-flip .70s cubic-bezier(.55, .04, .26, 1) 1.52s forwards;
+}
+@keyframes sp-flip {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(180deg); }
+}
+
+.sp-face {
+  position: absolute; inset: 0;
+  border-radius: var(--sd-r);
+  overflow: hidden;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ---- 牌背：墨色 + 细线星盘 + 左上受光边 ---- */
+.sp-back {
+  background: linear-gradient(158deg, var(--sp-ink-1), var(--sp-ink-2) 52%, var(--sp-ink-3));
+  border: 1px solid var(--sp-edge);
+}
+.sp-back::after {
+  content: '';
+  position: absolute; inset: calc(var(--sd-w) * .035);
+  border-radius: calc(var(--sd-r) * .7);
+  border: 1px solid var(--sp-hair);
+}
+.sp-back::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: var(--sd-r);
+  border: 1px solid var(--sp-rim);
+  -webkit-mask: linear-gradient(148deg, #000 0%, rgba(0,0,0,.35) 40%, transparent 68%);
+          mask: linear-gradient(148deg, #000 0%, rgba(0,0,0,.35) 40%, transparent 68%);
+  pointer-events: none;
+}
+
+/* ---- 牌面：白纸 + 一行 MOKA ---- */
+.sp-front {
+  transform: rotateY(180deg);
+  background: var(--sp-paper);
+  border: 1px solid var(--sp-paper-edge);
+}
+.sp-front::after {
+  content: '';
+  position: absolute; inset: calc(var(--sd-w) * .035);
+  border-radius: calc(var(--sd-r) * .7);
+  border: 1px solid var(--sp-paper-hair);
+}
+.sp-en {
+  position: absolute; left: 0; right: 0; bottom: 13%;
+  text-align: center;
+  font-size: calc(var(--sd-w) * .046);
+  letter-spacing: .44em; text-indent: .44em;
+  font-weight: 600;
+  color: var(--sp-paper-ink);
+}
+
+/* 牌背中间那座小星盘 */
+.sp-wheel { width: 50%; aspect-ratio: 1 / 1; color: var(--sp-wheel); opacity: .62 }
+.sp-wheel svg { width: 100%; height: 100%; display: block }
+
+/* ============================================================
+   字标
+   ============================================================ */
+.sp-logo {
+  position: absolute; left: 0; right: 0; top: 68.5%;
+  text-align: center;
+}
+.sp-logo .cn {
+  font-family: 'MK-Song', serif;
+  font-size: calc(var(--sd-w) * .262);
+  line-height: 1; font-weight: 400;
+  letter-spacing: .30em; text-indent: .30em;
+  color: var(--ink);
+  opacity: 0;
+  filter: blur(6px);
+  animation: sp-logo-in .72s cubic-bezier(.2, .7, .2, 1) 1.84s forwards;
+}
+@keyframes sp-logo-in { to { opacity: 1; filter: blur(0) } }
+.sp-logo .rule {
+  width: 0; height: 1px; background: var(--line);
+  margin: calc(var(--sd-w) * .12) auto 0;
+  animation: sp-rule-in .44s ease-out 2.06s forwards;
+}
+@keyframes sp-rule-in { to { width: calc(var(--sd-w) * .13) } }
+.sp-logo .en {
+  margin-top: calc(var(--sd-w) * .095);
+  font-size: calc(var(--sd-w) * .05);
+  letter-spacing: .42em; text-indent: .42em;
+  color: var(--ink-3); font-weight: 600;
+  opacity: 0;
+  animation: sp-fade-in .44s ease-out 2.12s forwards;
+}
+@keyframes sp-fade-in { to { opacity: 1 } }
+
+/* 系统开了「减少动态效果」：不做旋转/翻面，直接给最终画面 */
+@media (prefers-reduced-motion: reduce) {
+  .sp-orrery, .sp-rot, .sp-dr, .sp-tick line, .sp-ray line, .sp-romans text,
+  .sp-zodiac text, .sp-arc, .sp-star, .sp-dot,
+  .sp-card, .sp-flip, .sp-logo .cn, .sp-logo .rule, .sp-logo .en {
+    animation-duration: .01s !important;
+    animation-delay: 0s !important;
+  }
+}

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ════════════════════════════════════════════════════════════
+     猫卡 · App 主题（2026-11-17 新增 · 修「状态栏换了 2.5.2 还是黑的」）
+     ════════════════════════════════════════════════════════════
+     为什么必须自己写一支主题，而不是继续用 @android:style/Theme.NoTitleBar：
+
+       ① 根因：`Theme.NoTitleBar` 是 framework 里**最老那支非 Material 主题**（宿主是 `Theme`，
+          不是 Theme.Material / Theme.DeviceDefault）。它的
+          `android:windowDrawsSystemBarBackgrounds` 默认是 **false** —— 窗口**根本不绘制**
+          系统栏背景，于是 `Window.setStatusBarColor()` 被**静默忽略**（不报错、就是没效果），
+          状态栏那块露出的是 decor 的 windowBackground，而这支深色主题的 windowBackground
+          是黑色 → 不管怎么 setStatusBarColor，那条永远黑。这与「Android 6 到 16 一直黑」
+          的现象完全吻合。
+       ② 同向叠加：Android 15（API 35）起 `setStatusBarColor()` 已废弃，应用一旦被判成
+          edge-to-edge（新系统上很常见的强制行为）这个调用直接 no-op。所以「只改颜色」这条路
+          在新系统上本来就不可靠 —— 这里同时把 windowBackground 也纳入管理（见 MainActivity
+          的 applySystemBars：它连窗口底色一起刷），两条路一起兜。
+
+     ⚠ 父主题**不动**：仍然是 Theme.NoTitleBar。换 Material 那支会把 WebView 之外的
+       一堆 framework 外观（ActionBar / 默认字号 / 控件样式）一起带进来，这个壳里全是 WebView，
+       换父主题只会平白多一份风险。这里只把缺的几条属性补齐。
+     ⚠ 深浅两套的**唯一真源仍然是网页**（html[data-ui-theme]）：本文件里的颜色只管
+       「冷启动第一帧」，运行时由 app.js 调 CatCard.setUiTheme() → applySystemBars() 覆盖。
+       所以这里的静态值取浅色（= 默认主题），深色用户在拿到第一帧之后的几十毫秒内就被改过来。
+     ════════════════════════════════════════════════════════════ -->
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.NoTitleBar">
+        <!-- ★★ 本次的**关键一条**：让窗口自己绘制系统栏背景，setStatusBarColor /
+               statusBarColor 才会真正生效（父主题里它是 false）。 -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+
+        <!-- 窗口底色：旧主题是黑的，页面还没画出来的那一两帧 + 状态栏那块都靠它。
+             取页面底色 #FAFBFC（与 MainActivity 里 web.setBackgroundColor(0xFFFAFBFC) 同值）：
+             对浅色用户毫无变化；对深色用户，这一帧的亮度和 WebView 自己的底色**完全一样**，
+             不会引入"新的"白闪（深色用户本来就会闪这一下 #FAFBFC，见 MainActivity:120 的注释），
+             而且页面的首屏内联脚本会在第一次绘制前就把 <html> 底色写成对应的深/浅色。 -->
+        <item name="android:windowBackground">@color/win_bg_light</item>
+
+        <!-- 系统栏静态底色（浅色那套；运行时按主题覆盖，见 applySystemBars） -->
+        <item name="android:statusBarColor">@color/bar_light</item>
+        <item name="android:navigationBarColor">@color/bar_light</item>
+
+        <!-- ★ 2026-11-17（用户实机）：Android 15/16 上导航栏被强制 edge-to-edge 时，
+             系统会自己给手势导航栏加一层对比度 scrim（浅色页面上就是一条 ~34% 的灰带，
+             还把手势条翻成浅色）。页面的 CSS 碰不到它，setNavigationBarColor 也会被忽略。
+             这一条 = 关掉系统的自动 scrim，导航栏恢复成透明（露出页面自己的底色）。
+             运行时 applySystemBars() 里还有一次同义调用，两条腿一起走。 -->
+        <item name="android:enforceNavigationBarContrast">false</item>
+
+        <!-- 浅色底 → 深色图标。深色主题那次运行时会清掉这两位（WindowInsetsController /
+             SYSTEM_UI_FLAG_LIGHT_*），所以这里写 true 不会把深色用户的图标锁成深色。 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

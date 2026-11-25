@@ -1,0 +1,1150 @@
+/* ============================================================
+   猫卡 · 主样式  主题: 明亮白蓝 (功能优先, 不做昏暗氛围)
+   ============================================================ */
+
+:root {
+  --bg: #eef3fe;
+  --bg-grad-1: #ffffff;
+  --bg-grad-2: #dde9ff;
+  --panel: #ffffff;
+  --ink: #1c2b4a;
+  --ink-2: #4a5b7c;
+  --ink-3: #8494b5;
+  --line: #dbe6fb;
+  --primary: #2f6fed;
+  --primary-deep: #2458c4;
+  --primary-soft: #e7f0ff;
+  --danger: #e5484d;
+  --shadow: 0 8px 22px rgba(47, 111, 237, .14);
+  --shadow-sm: 0 3px 10px rgba(47, 111, 237, .10);
+  --radius: 8px;
+  --radius-sm: 6px;
+
+  /* 卡牌物理尺寸 (占卜桌用) */
+  /* ★ 2026-11-06（C25）：`--tabbar-h` 原来在 main.css:26 和 main.css:1119 **各定义一次**
+     （58px 与 46px，后定义者胜）。两处同名变量、值还不同 = 以后谁改都只改一半。
+     权威定义只留 1119 那一条（底栏真实高度 46），这里删掉。 */
+  --card-w: min(21vw, 100px);   /* 与设置页默认 100 对齐（首帧兜底；真值由 settings.init() 写内联） */
+  --card-h: calc(var(--card-w) * 1.5);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------- 整体骨架 ---------- */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 90% at 12% -8%, var(--bg-grad-1) 0%, transparent 55%),
+    radial-gradient(140% 100% at 100% 8%, var(--bg-grad-2) 0%, transparent 60%),
+    linear-gradient(180deg, #f6f9ff 0%, #e9f1ff 100%);
+}
+.scene.is-active { display: flex; }
+
+/* ============================================================
+   底部导航
+   ============================================================ */
+.tabbar {
+  height: var(--tabbar-h);
+  flex: none;
+  display: flex;
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabbar .tab {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: 2px;
+}
+.tabbar .tab::before {
+  content: "";
+  width: 14px; height: 3px;
+  border-radius: 1px;
+  background: transparent;
+}
+.tabbar .tab.is-active { color: var(--primary); font-weight: 600; }
+.tabbar .tab.is-active::before { background: var(--primary); }
+
+/* ============================================================
+   占卜桌
+   ============================================================ */
+.table-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+}
+.table-title-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.table-tools { flex: none; display: flex; align-items: center; gap: 6px; }
+/* ★ 2026-11-06（P5-B）：顶栏显示**当前牌堆全名**。
+   病根：牌堆栏的名字框只有 52px（v3 §6），内置第一副「Love & Armour 六十张爱情与护甲」
+   要 154px —— 靠省略号永远看不全；而原名唯一的全名入口是 title 属性（触摸端没有 hover）。
+   这里给顶栏留两行：13px × 1.25 × 2 行 = 32.5px，仍小于顶栏内容高（占卜桌 38 / 周易 44），
+   顶栏高度不变。两行仍放不下的超长名由 title 兜底（桌面端 hover / 真机长按由系统处理）。 */
+.table-deck-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.table-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+
+.bar-btn {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--primary);
+  font-size: 12.5px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+.bar-btn.bar-danger { color: var(--danger); }
+
+/* ---- 桌面 ---- */
+.playfield {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* 画布 = 一张可以比屏幕更大的桌面; 视口通过移动它来查看 */
+.desk-canvas {
+  position: absolute;
+  left: 0; top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  touch-action: none;
+}
+/* 世界地面层: 网格铺在牌下方, 随画布(镜头)一起移动/缩放 */
+.world-ground {
+  position: absolute;
+  z-index: 0;
+  background:
+    linear-gradient(rgba(20, 50, 120, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 50, 120, .05) 1px, transparent 1px),
+    linear-gradient(180deg, #e9f0ff, #d9e6ff);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+}
+.desk-canvas.is-pan-smooth { transition: transform .3s cubic-bezier(.2,.7,.3,1); }
+.playfield.is-panning { cursor: grabbing; }
+.field-empty-tip {
+  position: absolute;
+  left: 50%; top: 46%;
+  transform: translate(-50%, -50%);
+  color: var(--ink-3);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity .2s ease;
+}
+.field-empty-tip.is-hidden { opacity: 0; }
+
+/* ---- 桌上的一张卡 ---- */
+.tcard {
+  position: absolute;
+  width: var(--card-w);
+  height: var(--card-h);
+  perspective: 900px;
+  touch-action: none;
+  z-index: 10;
+  transition: box-shadow .18s ease, left .18s cubic-bezier(.2,.7,.3,1), top .18s cubic-bezier(.2,.7,.3,1);
+  cursor: grab;
+  will-change: transform;
+}
+.tcard.is-reloc { transition: left .26s cubic-bezier(.2,.8,.3,1), top .26s cubic-bezier(.2,.8,.3,1); }
+
+/* 拖动中: 只关过渡，牌本身保持原样 ——
+   ★ 2026-11-13 用户：「拖动的时候不需要加个黑线方框，也不需要变透明」
+     所以这里不再画描边环、不再调亮度、不再降透明度；"正在拖"由 1.06 微放大 + 更深阴影表达。 */
+.tcard.is-drag {
+  transition: none !important;
+  cursor: grabbing;
+}
+
+/* 松手落定回弹(0.16s 从 1.06 → 1) */
+.tcard.is-settle {
+  animation: cardDrop .16s cubic-bezier(.2,.9,.3,1);
+  box-shadow: 0 6px 16px rgba(47,111,237,.25);
+}
+.tcard.no-trans { transition: none !important; }
+@keyframes cardDrop {
+  from { transform: translate3d(0,0,0) scale(1.06); }
+  to   { transform: translate3d(0,0,0) scale(1); }
+}
+.tcard.is-drag { z-index: 999; cursor: grabbing; }
+.tcard.is-spawn { animation: spawn .34s cubic-bezier(.2,.8,.3,1.2); }
+@keyframes spawn {
+  0% { transform: scale(.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tcard-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform .5s cubic-bezier(.3,.7,.25,1);
+}
+.tcard.flipped .tcard-inner { transform: rotateY(180deg); }
+
+.tcard-side {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/* 背面 (默认可见) */
+.tcard-back {
+  background: linear-gradient(155deg, #5b8cff 0%, #2f6fed 55%, #1e4fd0 100%);
+  border: 1px solid #4a7df0;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,.95);
+}
+.tcard-back .cb-logo { font-size: 30px; line-height: 1; }
+.tcard-back .cb-name {
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 4px;
+  opacity: .85;
+}
+
+/* 正面 (翻转后可见) */
+.tcard-face {
+  transform: rotateY(180deg);
+  padding: 0;
+  background: #ffffff;
+}
+.face-top {
+  height: 7px;
+  flex: none;
+}
+.face-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 6px 6px;
+  min-height: 0;
+}
+.face-symbol {
+  font-size: 26px;
+  line-height: 1.15;
+}
+.face-name {
+  font-weight: 700;
+  font-size: 13px;
+  margin-top: 3px;
+  letter-spacing: 1px;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.face-keyword {
+  margin-top: 3px;
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  letter-spacing: 1px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.face-text {
+  margin-top: auto;
+  font-size: 9.5px;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 1.45;
+  letter-spacing: .2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- 牌堆栏(多副牌堆, 横向滑动) ---- */
+.pile-strip-wrap {
+  flex: none;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--line);
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.pile-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pile-strip::-webkit-scrollbar { display: none; }
+.pile-item {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px 6px;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 58px;
+}
+.pile-item.is-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+/* ---- 牌堆栏里的「一摞牌」（2026-10-20 重构）----
+   结构 = .ps-layer × N（厚度层，层数由 UI.pileDepth 按剩余张数决定）
+        + .ps-face（顶层牌面：牌背图 / 内置模板 / ✦▶）
+        + .ps-left（剩余张数角标）
+   ★ 厚度层必须是**真实子元素**：以前是 .pile-stack::before/::after，没有 z-index，
+     被 .ps-img/.ps-tpl（z-index:1）压在底下 —— 带整幅插画的英雄之旅 / Overflow
+     就看不见厚度，只有纯色牌背的两副"像一摞"（用户截图报的）。
+   ★ .pile-stack 本身**不再画任何东西**（背景/边框都搬到 .ps-face）：
+     这样负 z-index 的厚度层不会被自己的背景盖住，只会从牌面边缘露出来。
+   ★ 厚度层的颜色是 --ps-tint / --ps-shade，由 JS 按**这副牌自己的牌背主色**
+     （deck.backColor）内联进来 —— 四副牌各自一色，不是统一垫一条黑边。
+     没给值（老数据 / 自建牌组没设色）时才回落到下面这套蓝。 */
+.pile-stack {
+  position: relative;
+  width: 34px;
+  height: 50px;
+  border-radius: 5px;
+  isolation: isolate;          /* 厚度层的 z-index 只在"这一摞"里比较，不会掉到页面底下 */
+  --ps-dx: 1.8px;              /* 每往下一层，向右错开多少（原版那层薄边的量） */
+  --ps-dy: 1.8px;              /* 以及向下 */
+  --ps-tint: #c6d2f2;          /* 纸边色 = 牌背主色朝白调（JS 内联覆盖） */
+  --ps-shade: #b3c2ea;         /* 再深半档，给这层纸一点厚度（JS 内联覆盖） */
+}
+.pile-stack .ps-face {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  overflow: hidden;            /* 模板 SVG / 牌背图一律裁在圆角里（2026-10-13 修过的冒角） */
+  background: linear-gradient(150deg, #6b98ff, #2f6fed 60%, #1f52d8);
+  border: 1px solid #4a7df0;
+  box-shadow: var(--shadow-sm);
+}
+.pile-stack .ps-layer {
+  position: absolute;
+  inset: 0;
+  z-index: calc(1 - var(--i, 1));    /* 第 1 层贴着牌面，越往后越靠下 */
+  border-radius: inherit;
+  background: linear-gradient(160deg, var(--ps-tint), var(--ps-shade));
+  /* 一道很淡的暗缝就够 —— 原版第三、四副那种"看得出是一摞、又不抢眼"的量 */
+  border: 1px solid rgba(0, 0, 0, .18);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .10);
+  transform: translate(calc(var(--i, 1) * var(--ps-dx)), calc(var(--i, 1) * var(--ps-dy)));
+  pointer-events: none;
+}
+.pile-stack .ps-mark { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; }
+.pile-item-name {
+  font-size: 11px;
+  color: var(--ink-2);
+  max-width: 72px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pile-item.is-active .pile-item-name { color: var(--primary-deep); font-weight: 700; }
+.pile-stack .ps-left {
+  position: absolute;
+  top: -6px; right: -8px;
+  min-width: 18px; height: 16px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--primary-deep);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.pile-item-empty { opacity: .45; }
+.pile-empty {
+  padding: 12px 16px;
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+  width: 100%;
+}
+
+/* ============================================================
+   通用按钮
+   ============================================================ */
+.btn {
+  border: 0;
+  border-radius: 6px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-deep); }
+.btn-ghost { background: transparent; color: var(--ink-2); }
+.btn-soft { background: var(--primary-soft); color: var(--primary-deep); }
+.btn-danger { background: #fdecec; color: var(--danger); }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: .5; }
+
+/* ============================================================
+   遮罩 / 对话框
+   ============================================================ */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(23, 41, 82, .35);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-mask.is-hidden { display: none; }
+
+.dialog {
+  width: 100%;
+  max-width: 330px;
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+}
+.dialog-icon {
+  width: 54px; height: 54px;
+  margin: 0 auto 10px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+}
+.dialog-title { font-size: 18px; font-weight: 700; }
+.dialog-sub { font-size: 13px; color: var(--ink-2); margin: 8px 0 20px; line-height: 1.6; }
+.dialog .btn + .btn { margin-top: 8px; }
+
+/* 表单 */
+.field {
+  text-align: left;
+  margin-bottom: 14px;
+}
+.field > label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+  letter-spacing: .5px;
+}
+.input, .textarea, .select {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  padding: 11px 12px;
+  font-size: 15px;
+  background: #fbfcff;
+  color: var(--ink);
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.input:focus, .textarea:focus { border-color: var(--primary); background: #fff; }
+.textarea { resize: none; line-height: 1.6; }
+.field .hint { font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+
+/* 色板 */
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch {
+  width: 30px; height: 30px;
+  border-radius: 4px;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.swatch.is-sel { border-color: var(--ink); box-shadow: 0 0 0 2px #fff inset; }
+
+/* ============================================================
+   牌库
+   ============================================================ */
+.lib-page {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.lib-page.is-active { display: flex; }
+
+.lib-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 10px;
+}
+.lib-head .lib-title { flex: 1; font-size: 18px; font-weight: 700; }
+.lib-head .btn-mini {
+  border: 0;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 4px;
+}
+.lib-head .btn-mini.danger { background: #fdecec; color: var(--danger); }
+
+.lib-scroll { flex: 1; min-height: 0; padding: 4px 14px 120px; }
+
+/* 牌组列表 → 牌盒卡片风 */
+.deck-box {
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.deck-box-back {
+  flex: none;
+  position: relative;
+  width: 54px;
+  height: 78px;
+  border-radius: 4px;
+  border: 1px solid #6a95f5;
+  background:
+    linear-gradient(155deg, #6b98ff, #2f6fed 55%, #1f52d8);
+  box-shadow: 0 4px 10px rgba(36,88,196,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,.9);
+}
+.deck-box-back.has-img { border-color: var(--line-hard); }
+.deck-box-back .dbb-mark {
+  font-size: 15px;
+  width: 18px; height: 18px;
+  border: 1px solid rgba(255,255,255,.75);
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(45deg);
+}
+.deck-box-back .dbb-mark::after {
+  content: "✦";
+  font-size: 9px;
+  transform: rotate(-45deg);
+}
+.deck-box-main { flex: 1; min-width: 0; }
+.deck-box-name {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink-deep);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-box-meta { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.deck-box-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.deck-box-actions .btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* 卡片网格 (牌组内) */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));   /* 2026-09-18: 1fr → minmax(0,1fr)，防长文字撑宽整列 */
+  gap: 10px;
+}
+.grid-tile {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+}
+.grid-tile:active { background: var(--primary-soft); }
+
+/* 迷你牌面预览: 用 2:3 小牌形展示卡面 */
+.grid-tile.miniface { padding: 6px; }
+.mf-card {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 4px;
+  border: 1px solid var(--line-hard);
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+.mf-top { height: 6px; flex: none; }
+.mf-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 4px;
+}
+.mf-symbol { font-size: 16px; line-height: 1.1; }
+.mf-name {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-top: 2px;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mf-keyword {
+  font-size: 8px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  border-radius: 2px;
+  padding: 1px 5px;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.grid-tile .gt-symbol { font-size: 24px; line-height: 1.2; }
+.grid-tile .gt-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-top: 6px;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.grid-tile .gt-keyword {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.grid-add-tile {
+  border: 1.5px dashed #b9cdf7;
+  background: rgba(255,255,255,.5);
+  color: var(--primary);
+  font-size: 13px;
+  justify-content: center;
+  min-height: 96px;
+}
+.grid-add-tile .gt-symbol { font-size: 26px; }
+
+/* ============================================================
+   牌义查看层
+   ============================================================ */
+.meaning-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(23, 41, 82, .4);
+  backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.meaning-layer.is-hidden { display: none; }
+.meaning-panel {
+  width: 100%;
+  max-width: 340px;
+  max-height: 82%;
+  background: var(--panel);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rise .28s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes rise {
+  from { transform: translateY(26px) scale(.97); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.meaning-head {
+  flex: none;
+  padding: 18px 18px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.meaning-head .mh-symbol {
+  width: 58px; height: 58px;
+  flex: none;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  color: #fff;
+}
+.meaning-head .mh-name { font-size: 19px; font-weight: 800; letter-spacing: .5px; }
+.meaning-head .mh-keyword { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+.meaning-head .mh-keyword b { color: var(--primary-deep); }
+.meaning-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 18px 8px;
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: var(--ink);
+  user-select: text;
+  -webkit-user-select: text;
+  white-space: pre-wrap;
+}
+.meaning-quote {
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 9px 12px;
+  background: var(--primary-soft);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  line-height: 1.7;
+  font-style: italic;
+}
+.meaning-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 3px;
+  margin: 14px 0 6px;
+}
+.meaning-foot {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.meaning-foot .btn { flex: 1; }
+
+
+/* ============================================================
+   选牌台 (全屏半透明弹层)  +  桌面缩放按钮
+   ============================================================ */
+.tray-btn {
+  position: absolute;
+  right: 8px;
+  top: 46%;
+  transform: translateY(-50%);
+  z-index: 80;
+  width: 42px;
+  border: 1px solid #c4d6ff;
+  background: rgba(255,255,255,.96);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 0 8px;
+  cursor: pointer;
+  color: var(--primary);
+}
+.tray-btn:active { background: var(--primary-soft); }
+.tray-btn-icon { font-size: 17px; line-height: 1; }
+.tray-btn-count {
+  min-width: 20px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tray-btn.is-hidden { display: none; }
+
+/* 定位模式: 桌面牌对触摸"透明", 手势全部交给镜头 */
+.tcard.is-locked { pointer-events: none !important; }
+
+/* 全屏半透明弹层 */
+.tray-layer {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 200;
+  background: rgba(238, 244, 255, .92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: trayFade .2s ease;
+}
+@keyframes trayFade { from { opacity: 0; } to { opacity: 1; } }
+.tray-layer.is-hidden { display: none; }
+
+.tray-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 10px;
+}
+.tray-title { flex: 1; min-width: 0; text-align: center; }
+.tray-title .tray-title-main { font-size: 15px; font-weight: 700; color: var(--ink); display: block; }
+.tray-title .dim { font-weight: 400; color: var(--ink-3); font-size: 11px; margin-top: 2px; display: block; }
+
+.tray-btn-mini {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--primary);
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 13px;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+.tray-btn-mini:active { background: var(--primary-soft); }
+.tray-btn-mini.is-on {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary-deep);
+}
+.tray-head-btns { display: flex; gap: 6px; }
+
+.tray-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 12px calc(24px + env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
+}
+.tray-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+/* 台面里的一张背面小牌 (纯背面, 盲选不显示内容) */
+.tray-card {
+  aspect-ratio: 10 / 14.6;
+  border-radius: 5px;
+  background: linear-gradient(155deg, #6b98ff, #2f6fed 55%, #1f52d8);
+  border: 1px solid #4a7df0;
+  color: rgba(255,255,255,.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(47,111,237,.25);
+  transition: transform .12s ease, opacity .2s ease;
+}
+.tray-card .tc-logo { font-size: 24px; line-height: 1; }
+.tray-card:active { transform: scale(.93); }
+.tray-card.is-used { opacity: .25; pointer-events: none; transform: scale(.9); }
+/* 留空槽位: 抽走后的空位占位(虚点), 提示这里曾有一张牌 */
+.tray-slot {
+  aspect-ratio: 10 / 14.6;
+  border: 1.5px dashed rgba(47,111,237,.3);
+  border-radius: 5px;
+  background: rgba(231,240,255,.35);
+}
+
+.tray-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 14px;
+  padding: 60px 0;
+  line-height: 2;
+}
+
+/* 桌面缩放档位徽标(临时显示) */
+.desk-scale-tip {
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 300;
+  background: rgba(24,40,78,.88);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 14px 22px;
+  pointer-events: none;
+  animation: scaleTip .5s ease forwards;
+}
+@keyframes scaleTip {
+  0% { opacity: 0; transform: translate(-50%,-46%) scale(.9); }
+  18% { opacity: 1; transform: translate(-50%,-50%) scale(1.05); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-h) + 16px);
+  transform: translateX(-50%);
+  background: rgba(24, 40, 78, .92);
+  color: #fff;
+  font-size: 13.5px;
+  padding: 10px 18px;
+  border-radius: 4px;
+  z-index: 200;
+  box-shadow: 0 6px 18px rgba(0,0,0,.2);
+  max-width: 82vw;
+  text-align: center;
+  transition: opacity .25s ease, transform .25s ease;
+  /* ★ 2026-11-06（P1）：toast 是**纯文字**、整条没有可点的东西，但默认的
+     pointer-events:auto 会把它底下的牌堆栏「吃掉」1.8s（实测点 猫卡/周易/爱情
+     三个牌堆的名字，elementFromPoint 全命中 #toast —— 既不切堆也不抽牌；
+     而提示语往往正是"抽完了，点重来"这种叫你去点牌堆的话）。
+     所以整条都不接指针；以后真要在 toast 里放按钮，把 pointer-events:auto
+     加在**那颗按钮**上，别放开整条。 */
+  pointer-events: none;
+}
+.toast.is-hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 8px); }
+
+/* ============================================================
+   图片裁剪器 (Cropper 包装层)
+   ============================================================ */
+.crop-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(8, 14, 30, .96);
+  display: flex;
+  flex-direction: column;
+}
+.crop-stage { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+.crop-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  background: #0d1526;
+}
+.crop-bar .btn { padding: 8px 14px; font-size: 14px; border-radius: 4px; }
+.crop-bar .btn-ghost { color: #cdd6ea; }
+.crop-hint { font-size: 12px; color: #9fb0d0; }
+.crop-holder {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #05080f;
+}
+.crop-holder img { max-width: 100%; display: block; }
+.crop-holder .cropper-container { width: 100% !important; height: 100% !important; }
+
+/* 牌背编辑器覆盖层 */
+.backedit-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 380;
+  background: rgba(16, 26, 51, .5);
+  display: flex;
+  align-items: flex-end;
+}
+.backedit-panel {
+  width: 100%;
+  max-height: 88%;
+  background: #f6f9ff;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rise .25s cubic-bezier(.2,.8,.3,1);
+}
+.backedit-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.backedit-title { font-weight: 800; color: var(--ink-deep); }
+.backedit-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px 24px;
+}
+
+/* 牌背实时预览 */
+.back-preview-wrap { display: flex; justify-content: center; padding: 6px 0 16px; }
+.back-preview {
+  position: relative;
+  width: 150px;
+  height: 225px;
+  border-radius: 6px;
+  border: 1px solid #7b97cc;
+  overflow: hidden;
+  background: linear-gradient(155deg, #5b8cff, #2f6fed 60%, #1e4fd0);
+}
+.back-preview .bp-img {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+}
+.back-preview .bp-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 边框模板选择 */
+.tpl-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- 主页按钮(顶栏左, mQimen 子功能返回) ---- */
+.table-home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 9px;
+}
+.table-home-btn svg { display: block; }
+
+/* ====== 牌面新设计（v2） ====== */
+/* 注意：不要再给 .tcard-face 加 position:relative —— 会覆盖 .tcard-side 的绝对定位导致牌面透明 */
+.face-stack { position: absolute; left:0; right:0; top:0; bottom:0; display:flex; flex-direction:column; padding:6px 5px; box-sizing:border-box; }
+.fz { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; gap:4px; }
+.fc-chip {
+  display:inline-block; max-width:100%;
+  padding:4px 10px; border-radius:4px;
+  color:#fff; font-weight:700; font-size:12.5px; letter-spacing:1px;
+  text-align:center; line-height:1.3; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+  box-shadow:0 1px 3px rgba(0,0,0,.20);
+}
+.fc-keyword { font-size:10px; font-weight:600; padding:3px 8px; letter-spacing:.5px; opacity:.95; }
+
+/* 分段按钮（位置选择） */
+.seg-btn {
+  min-width:46px; padding:6px 0; font-size:13px;
+  border:1px solid var(--line-soft); background:#fff; color:var(--ink-2);
+  border-radius:6px; cursor:pointer; -webkit-user-select:none; user-select:none;
+}
+.seg-btn.is-sel { border-color: var(--primary); background: rgba(47,111,237,.12); color: var(--primary); font-weight:700; }
+
+/* 管理页微缩卡（无顶条/符号） */
+.mf-card.mf-new { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:#fff; padding:6px; text-align:center; }
+.mf-card.mf-new .mf-name { font-weight:700; font-size:12px; color:var(--ink-deep); letter-spacing:1px; }
+.mf-card.mf-new .mf-keyword { font-size:9px; padding:1px 6px; border-radius:6px; background:rgba(47,111,237,.12); color:var(--primary-deep); }
+
+/* 牌背边框模板：更明显的选中反馈 */
+/* 大预览的边框模板提示（无图时也能看出模板变化） */
+.back-preview.is-tpl-frame .bp-img { box-shadow: inset 0 0 0 4px #d9a83a, inset 0 0 0 8px rgba(217,168,58,.28); }
+.back-preview.is-tpl-double .bp-img { box-shadow: inset 0 0 0 3px var(--bk,#8a7a3a), inset 0 0 0 7px rgba(255,255,255,.55); }
+.back-preview.is-tpl-lozenge .bp-img { box-shadow: inset 0 0 0 2px var(--bk,#8a7a3a), inset 0 0 0 11px rgba(255,255,255,.45); }
+#back-fb { text-align:center; font-size:12px; color:var(--primary-deep); padding-top:4px; }
+
+/* ====== 占卜桌/牌库 精简高度（v2.1） ====== */
+:root { --tabbar-h: calc(46px + env(safe-area-inset-bottom, 0px)); }
+.table-bar { padding: 6px 12px; padding-top: calc(6px + env(safe-area-inset-top, 0px)); gap: 6px; }
+.bar-btn { padding: 5px 10px; font-size: 12px; }
+.lib-head { padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 6px; gap: 8px; }
+.pile-strip-wrap { padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px)); }
+.pile-strip { gap: 8px; padding: 2px 10px; }
+.pile-item { padding: 5px 8px 4px; gap: 3px; min-width: 52px; }
+.tabbar .tab { font-size: 14px; letter-spacing: 1px; }
+
+
+/* 牌面图片底图层 */
+.tcard-face { overflow: hidden; }
+.fc-img { position: absolute; left:0; top:0; right:0; bottom:0; background-size: cover; background-position: center; z-index: 0; }
+.face-stack { z-index: 1; }

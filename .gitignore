@@ -1,0 +1,22 @@
+# 构建中间产物
+app/build/
+app/out/
+dist/
+
+# 签名材料：绝不入库
+*.keystore
+*.jks
+*.p12
+signing-password
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# 依赖
+node_modules/
+__pycache__/
+*.pyc

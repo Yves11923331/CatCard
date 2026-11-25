@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<!-- ★ 2026-10-19 首屏守卫：.booting 期间 body 透明，但**照常绘制/光栅化**，整页铺好再一次性亮出来。
+     治的是「上半屏先出、下半屏等一会儿才出来」（脚本没跑完浏览器就抢画了半成品）。
+     摘掉 .booting 的地方有两处：app.js 的 bootReveal()（正常路径）＋ 下面这段内联脚本的 2s 硬兜底。 -->
+<html lang="zh-CN" class="booting">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fafbfc">
+  <title>猫卡 · 占卜</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="stylesheet" href="css/main.css">
+  <!-- 唯一的皮肤层（极简留白）。main.css 只留基础布局，旧皮肤层已合并到这里 -->
+  <link rel="stylesheet" href="css/v3.css">
+  <link rel="stylesheet" href="css/builtin-decks.css">
+  <link rel="stylesheet" href="css/zhouyi.css">
+  <!-- 启动页（方案 A「浮牌」）。单独一层、单独一个文件，删掉这一行 + body 里的 #splash
+       + js/splash.js 就把启动页整体去掉，主界面不受影响。 -->
+  <link rel="stylesheet" href="css/splash.css">
+  <!-- ★ 2026-10-19 首屏守卫的三件内联事，都要赶在首帧之前：
+       ① 主题：app.js 得等脚本执行才写 data-ui-theme，深色用户启动瞬间会闪一下白底 → 这里先读 localStorage 写上；
+          （键名与 app.js 的 THEME_KEY 一致：moka.theme）
+       ② 底色：CSS 还没到的那几十毫秒里，html 至少得是**对的深浅**，所以先把内联背景写死成主题色；
+          app.js 的 bootReveal() 放行时会把它清掉，之后交给 v3.css 的 html.booting / body 背景管。
+       ③ 兜底（两级，别嫌啰嗦 —— 这是「永远白屏」的唯一出口）：
+          · 2s：**只有 init 根本没开跑**（window.__bootArmed 没被设）才放行 —— 那是 app.js 之前就抛错了；
+          · 8s：无条件放行。防的是 init 挂起（比如 initImages 的 IndexedDB 请求永不 resolve）——
+            那种情况下 bootReveal 永远等不到调用，没有这一条用户就永远白屏。
+            8s 是「总兜底」，正常运行 1s 内就放了，它不会触发。 -->
+  <script>
+    (function () {
+      var html = document.documentElement, dark = false;
+      function unboot() { try { html.classList.remove('booting'); html.style.backgroundColor = ''; } catch (e) {} }
+      try {
+        var t = localStorage.getItem('moka.theme');
+        dark = (t === 'dark');
+        html.setAttribute('data-ui-theme', dark ? 'dark' : 'light');
+      } catch (e) {}
+      try { html.style.backgroundColor = dark ? '#14171a' : '#fafbfc'; } catch (e) {}
+      setTimeout(function () { if (!window.__bootArmed) unboot(); }, 2000);
+      setTimeout(unboot, 8000);
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ======= 启动页（方案 A「浮牌」）=======
+       为什么放在 body 第一个子元素：html.booting 期间要求"除 #splash 之外"的东西透明
+       （见 v3.css §26），这样主界面照样在底下绘制/光栅化，用户看到的只有这一层；
+       bootReveal() 一到就淡出，底下已经是画好的整页。
+       ★ 这一层不参与布局，position:fixed，删掉不影响任何场景。 -->
+  <div id="splash" class="splash" aria-hidden="true">
+    <div class="sp-glow"></div>
+    <div class="sp-sky"></div>
+
+    <!-- 四层星盘。刻度 / 地支 / 罗马数字 / 弧段由 js/splash.js 现场生成 -->
+    <div class="sp-orrery">
+      <svg viewBox="0 0 400 400" aria-hidden="true">
+
+        <g class="sp-rot outer">
+          <circle class="sp-dr" cx="200" cy="200" r="186" pathLength="100" style="animation-delay:.05s"/>
+          <circle class="sp-dr" cx="200" cy="200" r="180" pathLength="100" stroke-dasharray=".4 2.2"
+                  style="animation-delay:.18s;opacity:.55"/>
+          <g class="sp-tick" id="spTickOuter"></g>
+          <g class="sp-tick fine" id="spTickFine"></g>
+          <g class="sp-romans" id="spRomans"></g>
+          <g class="sp-arcs" id="spArcs"></g>
+        </g>
+
+        <g class="sp-rot mid">
+          <circle class="sp-dr" cx="200" cy="200" r="156" pathLength="100" stroke-dasharray="2 3"
+                  style="animation-delay:.24s;opacity:.5"/>
+          <circle class="sp-dr" cx="200" cy="200" r="148" pathLength="100" style="animation-delay:.30s"/>
+          <g class="sp-ray" id="spRays"></g>
+          <g class="sp-zodiac" id="spZodiac"></g>
+        </g>
+
+        <g class="sp-rot inner">
+          <circle class="sp-dr" cx="200" cy="200" r="108" pathLength="100" style="animation-delay:.60s"/>
+          <g class="sp-tick" id="spTickInner"></g>
+          <g class="sp-ray" id="spDiag"></g>
+          <polygon class="sp-star" id="spDodeca" points="" pathLength="100" style="animation-delay:.72s"/>
+          <polygon class="sp-star" id="spHex1" points="" pathLength="100" style="animation-delay:.84s"/>
+          <polygon class="sp-star" id="spHex2" points="" pathLength="100" style="animation-delay:.90s"/>
+          <circle class="sp-dr" cx="200" cy="200" r="54" pathLength="100" style="animation-delay:.96s"/>
+          <circle class="sp-dr" cx="200" cy="200" r="20" pathLength="100" style="animation-delay:1.04s"/>
+          <circle cx="200" cy="200" r="3.2" class="sp-dot" style="animation-delay:1.12s"/>
+          <circle cx="200" cy="200" r="1.2" class="sp-dot" style="animation-delay:1.18s"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 从法阵中心长出来的一张牌：墨色牌背 → 白纸牌面 -->
+    <div class="sp-card">
+      <div class="sp-flip">
+        <div class="sp-face sp-back">
+          <div class="sp-wheel">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <g fill="none" stroke="currentColor" stroke-width="1">
+                <circle cx="50" cy="50" r="38"/>
+                <circle cx="50" cy="50" r="30" stroke-dasharray=".8 4"/>
+                <circle cx="50" cy="50" r="12"/>
+                <path d="M50 12v76M12 50h76"/>
+              </g>
+              <circle cx="50" cy="50" r="2.4" fill="currentColor"/>
+            </svg>
+          </div>
+        </div>
+        <div class="sp-face sp-front">
+          <div class="sp-en">MOKA</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-logo">
+      <div class="cn">猫卡</div>
+      <div class="rule"></div>
+      <div class="en">CAT CARD</div>
+    </div>
+  </div>
+
+  <!-- 主舞台 -->
+  <main id="stage" class="stage">
+
+    <!-- ======= 场景一: 占卜桌 ======= -->
+    <section id="scene-table" class="scene is-active" data-scene="table">
+      <header class="table-bar">
+        <div class="table-title-wrap">
+          <button id="btn-drawer" class="bar-btn bar-menu" type="button" title="菜单" aria-label="打开菜单">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <!-- ★ 2026-11-06（P5-B）：当前牌堆全名。牌堆栏名字框只有 52px，
+               内置第一副「Love & Armour 六十张爱情与护甲」在栏里必然截断；
+               顶栏给两行（13px×1.25×2 = 32.5 < 38 内容高），全名可达。 -->
+          <span id="table-deck-name" class="table-deck-name" aria-live="polite"></span>
+        </div>
+        <div class="table-tools">
+          <!-- 主题：两个内联 SVG（月亮 / 太阳），由 CSS 按 html[data-ui-theme] 切换显示。
+               ★ 别再用 ☾ ☀ 那两个文字字形 —— 不同机型字形不一样，还可能被当 emoji 渲染成彩色。
+               ★ 也别往这个按钮里写 textContent（会把这俩 svg 抹掉，见 app.js 的 syncThemeBtn）。
+               顶栏不放「重来」和「回到起点」（2026-09 起）：右侧栏整条删掉了，重来搬进左边缘拉线抽屉。 -->
+          <!-- 模式：一颗按钮循环「开放 → 固牌 → 固界」。
+               三档都压成 2 个字（原来 开放/牌固定/界固定 是 2/3/3，不齐）；
+               图标跟着当前档位变，且和月亮同一套线（24 viewBox / stroke 1.9 / 圆角端点）。
+               ★ applyTableMode() 只写 #mode-label 和 #mode-ico，不要写整个按钮的 textContent。 -->
+          <button id="btn-nav-lock" class="mode-btn" type="button" title="点一下切换模式">
+            <span class="mb-ico" id="mode-ico" aria-hidden="true"></span><span id="mode-label">固界</span>
+          </button>
+          <button id="btn-theme" class="theme-sw" type="button" role="switch" aria-checked="false" title="切换深浅主题" aria-label="切换深浅主题">
+            <span class="ts-knob"></span>
+            <span class="ts-ico ts-moon" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 14.2A8.2 8.2 0 0 1 9.8 3.6 8.6 8.6 0 1 0 20.4 14.2z"/></svg></span>
+            <span class="ts-ico ts-sun" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.6v2.3M12 19.1v2.3M2.6 12h2.3M19.1 12h2.3M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/></svg></span>
+          </button>
+        </div>
+      </header>
+
+      <div id="playfield" class="playfield">
+        <p id="field-tip" class="field-empty-tip">点牌堆切换 · 再点抽一张</p>
+        <div id="desk-canvas" class="desk-canvas">
+        </div>
+
+        <!-- 左边缘「拉线」（2026-09-18，用户选定 A 款）
+             一条 1px 的竖线：两端渐隐、中段留一个断口，箭头正好嵌在断口里 ——
+             这就是"能拉"的全部暗示。往右拉出「桌面」抽屉（重来搬进去了）。
+             ★ 必须放在 #playfield 里：线的高低是相对桌面算的（26%~74%）。
+             ★ pointerdown 要 stopPropagation，否则会同时触发桌面的平移手势。 -->
+        <button id="edge-pull" class="edge-pull" type="button"
+                title="往右拉：桌面操作" aria-label="往右拉出桌面操作">
+          <span class="ep-arw" aria-hidden="true"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l6 7-6 7"/></svg></span>
+        </button>
+
+        <!-- 桌面操作提示（第一次进占卜桌讲一次：「往右拉这条线」）
+             存在的唯一理由：那条线做得太不显眼，真有人看不见（用户 2026-09-18 提的）。
+             ★ 类名前缀一律 et-（edge tutorial）。.tut-* 是**神签自己的**，上次撞过名把神签排版盖掉了，别再用。
+             ★ 层级：scrim 在拉线**下面**（.edge-pull z-index 40 > 这里 30），
+               所以提示亮着的时候那条线照样能拉 —— 说明和上手是同一次。 -->
+        <div id="et-layer" class="et-layer is-hidden" aria-hidden="true">
+          <div class="et-scrim" id="et-scrim"></div>
+          <div class="et-ring" aria-hidden="true"></div>
+          <div class="et-card" id="et-card">
+            <div class="et-title">往右拉这条线</div>
+            <div class="et-desc">桌面上的操作（收牌 · 重来）藏在这个抽屉里，拉出来才看得到。</div>
+            <button id="et-ok" class="et-ok" type="button">知道了</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- 牌堆栏: 每一副牌堆来自牌库, 可横向滑动; 点选切换, 点中激活的堆抽一张 -->
+      <div class="pile-strip-wrap">
+        <div id="pile-strip" class="pile-strip" role="group" aria-label="牌堆"></div>
+      </div>
+
+      <!-- 选牌台按钮：点一下 = 进选牌台（就这一件事，没有隐藏手势） -->
+      <button id="btn-tray" class="tray-btn" type="button" title="选牌台" aria-label="选牌台">
+        <span class="tray-btn-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="12" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/></svg></span>
+        <span id="tray-btn-count" class="tray-btn-count">0</span>
+      </button>
+
+      <!-- 「桌面」抽屉：由左边缘那条拉线拉出来（2026-09-18）
+           ★ 沿革：右侧栏原本是 起点 / 定位 / 重来 —— 定位搬到顶栏、起点改成全自动，
+             最后一颗「重来」也不再独占一栏，搬进这里（右栏整个删掉）。
+           面板 236px，滑动由 JS 跟手驱动（transform 写在 JS 里，这里只给静止态）。 -->
+      <div id="pull-drawer" class="pull-drawer" aria-hidden="true">
+        <div class="pd-mask" id="pd-mask"></div>
+        <div class="pd-panel" id="pd-panel">
+          <div class="pd-cap">桌面</div>
+          <div class="pd-cnt" id="pd-cnt">桌上还没有牌</div>
+          <button id="pd-reset" class="pd-row" type="button">
+            <span class="pd-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a8 8 0 1 1-.6 4"/><path d="M4 4.5V10h5.5"/></svg></span>重来<span class="pd-sub">收牌 · 洗回满副</span>
+          </button>
+          <div class="pd-hint">点面板外收回</div>
+        </div>
+      </div>
+
+      <!-- 全屏半透明选牌台 -->
+      <div id="tray-layer" class="tray-layer is-hidden">
+        <div class="tray-top">
+          <div class="tray-title">
+            <span id="tray-title-text">选牌台</span>
+          </div>
+          <div class="tray-head-btns">
+            <!-- 「洗牌」按钮已去掉：进 App / 重来之后第一次点开选牌台会自动洗一次（见 table.js 的 autoShuffleIfNeeded） -->
+            <button id="btn-tray-close" class="tray-btn-mini" type="button">✕ 收起</button>
+          </div>
+        </div>
+        <div id="tray-scroll" class="tray-scroll">
+          <div id="tray-grid" class="tray-grid"></div>
+        </div>
+      </div>
+
+      <!-- 引导覆盖层 -->
+      <div id="table-cover" class="modal-mask is-hidden">
+        <div class="dialog">
+          <div class="dialog-icon" id="cover-icon">✦</div>
+          <div class="dialog-title" id="cover-title">牌堆已空</div>
+          <div class="dialog-sub" id="cover-sub">把已抽出的牌收回牌堆，重新洗牌再来</div>
+          <button id="btn-cover-action" class="btn btn-primary" type="button">重来一次</button>
+          <button id="btn-cover-secondary" class="btn btn-ghost" type="button">收起提示</button>
+        </div>
+      </div>
+    </section>
+
+  <!-- ======= 场景: 周易（占卜桌的 1:1 独立拷贝；逻辑见 scenes/zhouyi-table.js）======= -->
+    <section id="scene-zhouyi" class="scene" data-scene="zhouyi">
+      <header class="table-bar">
+        <div class="table-title-wrap">
+          <!-- ★ 用户：周易页左上角要和其他界面一样是**返回键**（不是汉堡）
+               ★ 2026-11-17：**形态也统一成文字键「‹ 返回」**。全站五个子页面里，牌库（牌组/牌背）、
+                 神签、骰子这 4 处都是 `<button class="btn-mini">‹ 返回</button>`，只有周易这颗是纯图标
+                 SVG（18px / stroke 2）—— 用户就是嫌这个不一样。类仍用 .bar-btn：它是「顶栏那一支」，
+                 与 `.lib-head .btn-mini` 是同一套视觉（13px/600 · #5a636e · 透明底 · 无边框 · 10px 圆角 · 44 高），
+                 实测只有左右内边距差 2px（宽 50 vs 54），CSS 一行都不用加。
+                 ⚠ 别把它换成裸 `.btn-mini`：`.table-bar` 里没有 `.btn-mini` 的配色规则（那条写在
+                   `.lib-head .btn-mini` 作用域里），换过去会掉回浏览器默认按钮（灰底 #efefef + 2px outset 边框 + 黑字）。
+                 ⚠ 顺手把 `bar-menu` 摘了：它全站零 CSS、零 JS 引用，本来是从占卜桌那颗汉堡拷过来的标记，
+                   留在这颗「返回」上只会误导。
+                 ★ title / aria-label 保留：另外 4 处返回键都没有，这是周易更规范的一面（用户认可保留）。 -->
+          <button id="zy-btn-drawer" class="bar-btn" type="button" title="返回" aria-label="返回占卜桌">‹ 返回</button>
+          <!-- ★ 2026-11-17（用户）：周易页也要有自己的**主标题**，和骰子/神签/牌库那些子页一样
+               是 18px/700 的「周易」；当前牌堆名降级成标题旁边的小字（11.5px / --ink-3 / 400），
+               就是 `.lib-title .lib-sub` 那一套的视觉。
+               ⚠ #zy-table-deck-name 的 id 不能动（zhouyi-table.js:71 取它、:291-293 往里写牌堆名 +
+                 style.display）——这里只把 class 从 .table-deck-name 换成 .zy-title-sub（那套 13px/600
+                 的全局规则留给占卜桌，一个字没改）。长牌堆名一行省略号截断，不许挤掉标题。 -->
+          <div class="zy-title">周易<span id="zy-table-deck-name" class="zy-title-sub" aria-live="polite"></span></div>
+        </div>
+        <div class="table-tools">
+          <!-- 主题：两个内联 SVG（月亮 / 太阳），由 CSS 按 html[data-ui-theme] 切换显示。
+               ★ 别再用 ☾ ☀ 那两个文字字形 —— 不同机型字形不一样，还可能被当 emoji 渲染成彩色。
+               ★ 也别往这个按钮里写 textContent（会把这俩 svg 抹掉，见 app.js 的 syncThemeBtn）。
+               顶栏不放「重来」和「回到起点」（2026-09 起）：右侧栏整条删掉了，重来搬进左边缘拉线抽屉。 -->
+          <!-- 模式：一颗按钮循环「开放 → 固牌 → 固界」。
+               三档都压成 2 个字（原来 开放/牌固定/界固定 是 2/3/3，不齐）；
+               图标跟着当前档位变，且和月亮同一套线（24 viewBox / stroke 1.9 / 圆角端点）。
+               ★ applyTableMode() 只写 #mode-label 和 #mode-ico，不要写整个按钮的 textContent。 -->
+          <!-- 周易页：这两颗是这一页自己的（原来那两颗「固界/固牌」「深浅主题」已按用户要求删除：
+               前者在副本里根本没接线 = 死按钮，后者这一页不需要） -->
+          <!-- ★ 2026-11-17：按用户拍板的「方案 A · 极简线性对」符号化（预览-周易-20261117/README.md §3）。
+               纯线稿、viewBox 24、stroke 1.7；不铺底、不画框，和左上那颗「‹ 返回」同一套语言。
+               ⚠ #zy-dice-hint 必须留在 DOM 里：zhouyi.js 的 setYao()/clearYao()（214/234 行）一直往里写
+                 「初爻 / 六面骰」；符号化后它不显示了，用 .zy-sr 视觉隐藏（JS 一行不用改）。
+               ⚠ #zy-btn-dice / #zy-btn-book 两个 id 不能动（zhouyi.js:328/336 靠它们挂 click）。 -->
+          <button class="zy-top-btn is-sym is-line" type="button" id="zy-btn-dice" aria-label="骰子 · 取动爻" title="骰子 · 取动爻">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="3.4" width="17.2" height="17.2" rx="4.6"/><circle cx="8.5" cy="8.5" r="1.45" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.45" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.45" fill="currentColor" stroke="none"/></svg>
+            <em id="zy-dice-hint" class="zy-sr">六面骰</em>
+          </button>
+          <button class="zy-top-btn is-sym is-line" type="button" id="zy-btn-book" aria-label="查易经" title="查易经">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 6.3h16"/><path d="M4 12h5.4"/><path d="M14.6 12H20"/><path d="M4 17.7h16"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div id="zy-playfield" class="playfield">
+        <p id="zy-field-tip" class="field-empty-tip">点牌堆切换 · 再点抽一张</p>
+        <div id="zy-desk-canvas" class="desk-canvas">
+        </div>
+
+        <!-- 左边缘「拉线」（2026-09-18，用户选定 A 款）
+             一条 1px 的竖线：两端渐隐、中段留一个断口，箭头正好嵌在断口里 ——
+             这就是"能拉"的全部暗示。往右拉出「桌面」抽屉（重来搬进去了）。
+             ★ 必须放在 #playfield 里：线的高低是相对桌面算的（26%~74%）。
+             ★ pointerdown 要 stopPropagation，否则会同时触发桌面的平移手势。 -->
+        <button id="zy-edge-pull" class="edge-pull" type="button"
+                title="往右拉：桌面操作" aria-label="往右拉出桌面操作">
+          <span class="ep-arw" aria-hidden="true"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l6 7-6 7"/></svg></span>
+        </button>
+
+        <!-- 桌面操作提示（第一次进占卜桌讲一次：「往右拉这条线」）
+             存在的唯一理由：那条线做得太不显眼，真有人看不见（用户 2026-09-18 提的）。
+             ★ 类名前缀一律 et-（edge tutorial）。.tut-* 是**神签自己的**，上次撞过名把神签排版盖掉了，别再用。
+             ★ 层级：scrim 在拉线**下面**（.edge-pull z-index 40 > 这里 30），
+               所以提示亮着的时候那条线照样能拉 —— 说明和上手是同一次。 -->
+        <div id="zy-et-layer" class="et-layer is-hidden" aria-hidden="true">
+          <div class="et-scrim" id="zy-et-scrim"></div>
+          <div class="et-ring" aria-hidden="true"></div>
+          <div class="et-card" id="zy-et-card">
+            <div class="et-title">往右拉这条线</div>
+            <div class="et-desc">桌面上的操作（收牌 · 重来）藏在这个抽屉里，拉出来才看得到。</div>
+            <button id="zy-et-ok" class="et-ok" type="button">知道了</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- 牌堆栏: 每一副牌堆来自牌库, 可横向滑动; 点选切换, 点中激活的堆抽一张 -->
+      <div class="pile-strip-wrap">
+        <div id="zy-pile-strip" class="pile-strip" role="group" aria-label="牌堆"></div>
+      </div>
+
+      <!-- 选牌台按钮：点一下 = 进选牌台（就这一件事，没有隐藏手势） -->
+      <button id="zy-btn-tray" class="tray-btn" type="button" title="选牌台" aria-label="选牌台">
+        <span class="tray-btn-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="12" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/></svg></span>
+        <span id="zy-tray-btn-count" class="tray-btn-count">0</span>
+      </button>
+
+      <!-- 「桌面」抽屉：由左边缘那条拉线拉出来（2026-09-18）
+           ★ 沿革：右侧栏原本是 起点 / 定位 / 重来 —— 定位搬到顶栏、起点改成全自动，
+             最后一颗「重来」也不再独占一栏，搬进这里（右栏整个删掉）。
+           面板 236px，滑动由 JS 跟手驱动（transform 写在 JS 里，这里只给静止态）。 -->
+      <div id="zy-pull-drawer" class="pull-drawer" aria-hidden="true">
+        <div class="pd-mask" id="zy-pd-mask"></div>
+        <div class="pd-panel" id="zy-pd-panel">
+          <div class="pd-cap">桌面</div>
+          <div class="pd-cnt" id="zy-pd-cnt">桌上还没有牌</div>
+          <button id="zy-pd-reset" class="pd-row" type="button">
+            <span class="pd-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a8 8 0 1 1-.6 4"/><path d="M4 4.5V10h5.5"/></svg></span>重来<span class="pd-sub">收牌 · 洗回满副</span>
+          </button>
+          <div class="pd-hint">点面板外收回</div>
+        </div>
+      </div>
+
+      <!-- 全屏半透明选牌台 -->
+      <div id="zy-tray-layer" class="tray-layer is-hidden">
+        <div class="tray-top">
+          <div class="tray-title">
+            <span id="zy-tray-title-text">选牌台</span>
+          </div>
+          <div class="tray-head-btns">
+            <!-- 「洗牌」按钮已去掉：进 App / 重来之后第一次点开选牌台会自动洗一次（见 table.js 的 autoShuffleIfNeeded） -->
+            <button id="zy-btn-tray-close" class="tray-btn-mini" type="button">✕ 收起</button>
+          </div>
+        </div>
+        <div id="zy-tray-scroll" class="tray-scroll">
+          <div id="zy-tray-grid" class="tray-grid"></div>
+        </div>
+      </div>
+
+      <!-- 引导覆盖层 -->
+      <div id="zy-table-cover" class="modal-mask is-hidden">
+        <div class="dialog">
+          <div class="dialog-icon" id="zy-cover-icon">✦</div>
+          <div class="dialog-title" id="zy-cover-title">牌堆已空</div>
+          <div class="dialog-sub" id="zy-cover-sub">把已抽出的牌收回牌堆，重新洗牌再来</div>
+          <button id="zy-btn-cover-action" class="btn btn-primary" type="button">重来一次</button>
+          <button id="zy-btn-cover-secondary" class="btn btn-ghost" type="button">收起提示</button>
+        </div>
+      </div>
+    
+      <!-- ★ 周易页自己加的东西（桌面那 113 行是占卜桌的 1:1 拷贝，下面这些才是这一页特有的） -->
+      <div class="zy-dice-box is-hidden" id="zy-dice-panel">
+        <div id="zy-dice-page"></div>
+        <div class="zy-dice-cap" id="zy-dice-cap">点击投掷</div>
+        <!-- 独立的错误行：骰子出错时写在这里（setYao 只改上面那行，碰不到它） -->
+        <div class="zy-dice-err is-hidden" id="zy-dice-err"></div>
+      </div>
+<div class="zy-mask is-hidden" id="zy-mask"></div>
+      <div class="zy-panel is-hidden" id="zy-book-panel">
+        <div id="zy-book-body"></div>
+      </div>
+
+      <!-- ★ 2026-11-17：首次进入 · 四步引导（默想问题 → 抽卦牌 → 取动爻 → 查易经）。
+           规矩（用户拍板）：一个蒙层 + 在高亮目标上用 box-shadow 挖「亮洞」+ 一张文案卡；
+           不做 pointer-events 穿透、不做"点目标即学会"，只有「跳过」和「下一步」两个按钮。
+           只弹一次：localStorage 'moka.tut.zhouyi.v1'（逻辑在 scenes/zhouyi.js）。
+           挂在 #scene-zhouyi 里面：切走场景自动跟着隐藏，不会浮到别的页上。 -->
+      <div class="zy-guide is-hidden" id="zy-guide" aria-hidden="true">
+        <div class="zy-guide-hole" id="zy-guide-hole" aria-hidden="true"></div>
+        <div class="zy-guide-card" id="zy-guide-card" role="dialog" aria-modal="true" aria-labelledby="zy-guide-title">
+          <div class="zy-guide-hd">
+            <span class="zy-guide-step" id="zy-guide-step">第 1 步 / 共 4 步</span>
+            <button class="zy-guide-skip" id="zy-guide-skip" type="button">跳过</button>
+          </div>
+          <div class="zy-guide-title" id="zy-guide-title">先默想你要问的问题</div>
+          <div class="zy-guide-desc" id="zy-guide-desc">想好后点「开始」继续。</div>
+          <button class="zy-guide-ok" id="zy-guide-ok" type="button">开始</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= 场景二: 牌库 ======= -->
+    <section id="scene-library" class="scene" data-scene="library">
+      <div id="lib-home" class="lib-page is-active"></div>
+      <div id="lib-deck" class="lib-page"></div>
+      <!-- 编辑猫卡 · 单屏「鲸造」编辑器（2026-10-11 重构）：
+           一整屏 = 画布（一张牌）+ 工具坞（底子/位置/字号/字体/样式/牌面/图片/内容/更多） -->
+      <div id="lib-editor" class="lib-page ed-page"></div>
+      <div id="lib-back" class="lib-page"></div>
+    </section>
+    <!-- ======= 场景三: 设置 ======= -->
+    <section id="scene-settings" class="scene" data-scene="settings">
+      <div id="set-page" class="lib-page is-active"></div>
+    </section>
+
+    <!-- ======= 场景四: 神签 ======= -->
+    <section id="scene-lots" class="scene" data-scene="lots">
+      <div id="lots-page" class="lib-page is-active"></div>
+    </section>
+
+    <!-- ======= 场景五: 骰子（抽屉进入）======= -->
+    <section id="scene-dice" class="scene" data-scene="dice">
+      <div id="dice-page" class="lib-page is-active"></div>
+    </section>
+
+    <!-- ======= 场景六: 对话（抽屉进入）======= -->
+    <section id="scene-chat" class="scene" data-scene="chat">
+      <div id="chat-page" class="lib-page is-active"></div>
+    </section>
+  </main>
+
+  <!-- 侧边抽屉（占卜桌左上角汉堡打开）：只放「神签」，其余留白给以后 -->
+  <div id="drawer-mask" class="drawer-mask is-hidden"></div>
+  <aside id="drawer" class="drawer is-hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="drawer-title">猫卡</div>
+      <div class="drawer-sub">一只严肃的占卜盒子喵</div>
+    </div>
+    <button class="drawer-item" type="button" data-goto="lots">
+      <span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>
+      <span class="dt">神签<em>求签 · 写签 · 导入</em></span>
+    </button>
+    <button class="drawer-item" type="button" data-goto="dice">
+      <span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.6l8.4 4.8v9.2L12 21.4 3.6 16.6V7.4z"/><path d="M12 12l8.4-4.6M12 12v9.4M12 12L3.6 7.4"/><path d="M12 10.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6z"/></svg></span>
+      <span class="dt">骰子<em>掷骰 · 改面 · 换色</em></span>
+    </button>
+    <button class="drawer-item" type="button" data-goto="chat">
+      <span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.4 12.6c0 4-3.8 7.2-8.4 7.2-1 0-2-.2-2.9-.5L4.6 21l1.2-3.4c-1.4-1.3-2.2-3-2.2-5 0-4 3.8-7.2 8.4-7.2s8.4 3.2 8.4 7.2z"/><path d="M8.6 11.8h.01M12 11.8h.01M15.4 11.8h.01"/></svg></span>
+      <span class="dt">对话<em>问签 · 回牌 · 留档</em></span>
+    </button>
+    <button class="drawer-item" type="button" data-goto="zhouyi">
+      <span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6c2.3 0 4.2 1.9 4.2 4.2S12 12 12 12s-4.2 1.9-4.2 4.2 1.9 4.2 4.2 4.2"/><circle cx="12" cy="7.8" r="1.05" fill="currentColor" stroke="none"/><circle cx="12" cy="16.2" r="1.05" fill="currentColor" stroke="none"/></svg></span>
+      <span class="dt">周易<em>抽爻 · 看辞 · 搜卦</em></span>
+    </button>
+    <div class="drawer-foot" id="drawer-ver">猫卡</div>
+  </aside>
+
+  <!-- ★ 2026-09-21：写盘失败的**常驻**提示条（默认藏起来）
+       为什么常驻而不是 toast：写盘失败意味着"你刚才的改动重启后会回退"，
+       一句两秒就消失的提示等于没提示；这条一直挂着，直到某次真的存成功。
+       由 app.js 订阅 data.onPersistError 来开/关。 -->
+  <div id="save-warn" class="save-warn is-hidden" role="alert">
+    <span class="sw-ico">⚠</span>
+    <span class="sw-txt" id="save-warn-txt">这次改动没存到手机上</span>
+    <button type="button" class="sw-close" id="save-warn-close" aria-label="知道了">知道了</button>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav id="tabbar" class="tabbar">
+    <button class="tab is-active" type="button" data-goto="table">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="9" rx="2"/><path d="M8 7.5h8M10 4.5h4"/></svg></span>
+      <span class="tl">占卜桌</span>
+    </button>
+    <button class="tab" type="button" data-goto="library">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="12" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/></svg></span>
+      <span class="tl">牌库</span>
+    </button>
+    <button class="tab" type="button" data-goto="settings">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9M17 8h4M3 16h4M11 16h10"/><circle cx="14.5" cy="8" r="2.2"/><circle cx="8.5" cy="16" r="2.2"/></svg></span>
+      <span class="tl">设置</span>
+    </button>
+  </nav>
+
+  <!-- 牌义查看层 -->
+  <div id="meaning-layer" class="meaning-layer is-hidden"></div>
+
+  <!-- 通用遮罩 + 对话框容器 -->
+  <div id="overlay-root" class="overlay-root"></div>
+
+  <div id="toast" class="toast is-hidden"></div>
+
+  <link rel="stylesheet" href="css/cropper.min.css">
+  <script src="js/idb.js"></script>
+  <!-- 内置牌组注册表：由 app/decks/*.json 生成，**必须**排在 data.js 前面 -->
+  <script src="js/builtin-decks.js"></script>
+  <script src="js/builtin-lots.js"></script>
+  <script src="js/builtin-asks.js"></script>
+  <!-- 全 App 唯一的随机源（crypto.getRandomValues）：必须排在 data.js 前面 -->
+  <script src="js/random.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/jszip.min.js"></script>
+  <script src="js/io.js"></script>
+  <!-- 签文截图（抽签页相机键）：Canvas 2D 重画成 1080 宽的 PNG，落地走 io.saveImageFile -->
+  <script src="js/lot-shot.js"></script>
+  <script src="js/cropper.min.js"></script>
+  <script src="js/imagecrop.js"></script>
+  <script src="js/scenes/table.js"></script>
+  <script src="js/scenes/zhouyi-table.js"></script>
+  <script src="js/scenes/library.js"></script>
+  <script src="js/scenes/editor.js"></script>
+  <script src="js/scenes/settings.js"></script>
+  <script src="js/scenes/lots.js"></script>
+  <script src="js/three.min.js"></script>
+  <script src="js/scenes/dice.js"></script>
+  <script src="js/scenes/zhouyi-dice.js"></script>
+  <script src="js/scenes/chat.js"></script>
+  <script src="js/scenes/zhouyi.js"></script>
+  <script src="js/app.js"></script>
+  <!-- 启动页退场控制（只等 bootReveal 一声令下，自己最多挡 3s） -->
+  <script src="js/splash.js"></script>
+  <script>
+    // 调试: 把未捕获错误显示在页面上(方便真机排查)
+    window.addEventListener('error', function (ev) {
+      try {
+        var box = document.getElementById('err-box');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'err-box';
+          box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:70px;z-index:9999;background:#7a1212;color:#fff;padding:8px 10px;font-size:12px;border-radius:4px;white-space:pre-wrap;max-height:40vh;overflow:auto;user-select:text;-webkit-user-select:text;';
+          document.body.appendChild(box);
+        }
+        var t = new Date().toTimeString().slice(0,8);
+        var file = ev.filename ? ev.filename.split('/').pop() : '(inline)';
+        var loc = (ev.lineno || ev.colno) ? (ev.lineno || '') + ':' + (ev.colno || '') : '';
+        box.textContent = '[' + t + '] ' + (ev.message || ev.type) + '  [' + file + ' ' + loc + ']\n---\n' + (box.textContent || '');
+        try { window.MoKa && window.MoKa.ui && window.MoKa.ui.toast('JS错误: ' + (ev.message||'').slice(0,60)); } catch(e3){}
+      } catch (e2) {}
+    });
+    window.addEventListener('unhandledrejection', function (ev) {
+      try {
+        var msg = ev && ev.reason && (ev.reason.message || ev.reason);
+        // ★ 2026-10-15：这里原来直接调 window.MoKa.ui.toast —— 但 MoKa.ui 是**后面才加载**的
+        //   （ui.js 在 data.js 之后），更早的脚本抛出 rejection 时这一行自己就是二次异常，
+        //   真正的原因被盖掉。和上面 error 处理器一样先判存在。
+        if (msg && window.MoKa && window.MoKa.ui && window.MoKa.ui.toast) {
+          window.MoKa.ui.toast('Promise错误: ' + String(msg).slice(0, 60));
+        }
+      } catch (e4) {}
+    });
+  </script>
+  <script>
+    // 独立 App：系统返回键由原生 MainActivity.onBackPressed 调 window.catcardBack()
+    // 返回 true = "我关掉了一个浮层"，原生就不退出应用
+    (function () {
+      function closeTopmost() {
+        /* ★ 2026-09-21：裁剪器（imagecrop）挂的是 .crop-mask，不是 .modal-mask ——
+           系统返回键原来完全看不见它：裁剪页全屏时按返回，返回键被吃掉（返回 true）却没关掉裁剪，
+           而是把**下面的牌库页**一层层退掉（实测：lib-card → lib-deck），刚敲的名字/牌义全丢。
+           所以裁剪器要排在**所有浮层之前**处理：它是最上面那一层。 */
+        try {
+          if (window.MoKa && window.MoKa.imagecrop && window.MoKa.imagecrop.cancel &&
+              window.MoKa.imagecrop.cancel()) return true;
+        } catch (eCrop) {}
+        // 抽屉优先关
+        var dw = document.getElementById('drawer');
+        if (dw && !dw.classList.contains('is-hidden')) {
+          if (window.MoKa && window.MoKa.app && window.MoKa.app.closeDrawer) { window.MoKa.app.closeDrawer(); return true; }
+        }
+        // 首次进桌的「往右拉这条线」提示（比抽屉更浅，先收它）
+        var et = document.getElementById('et-layer');
+        if (et && !et.classList.contains('is-hidden')) {
+          try { window.MoKa.table.closePullTut(); return true; } catch (e) {}
+        }
+        // 左边缘拉出来的「桌面」抽屉（压在遮罩下面，先收它）
+        var pd = document.getElementById('pull-drawer');
+        if (pd && pd.classList.contains('is-open')) {
+          try { window.MoKa.table.closePullDrawer(); return true; } catch (e) {}
+        }
+        var root = document.getElementById('overlay-root');
+        var masks = root ? root.querySelectorAll('.modal-mask') : [];
+        for (var i = 0; i < masks.length; i++) {
+          try { masks[i].dispatchEvent(new MouseEvent('click', { bubbles: true })); return true; } catch (e) {}
+        }
+        var meaning = document.getElementById('meaning-layer');
+        if (meaning && !meaning.classList.contains('is-hidden')) {
+          try {
+            // 放大查看器盖在弹层上面 → 先关它，再关弹层（一次返回只吃一层）
+            if (window.MoKa.table.closeViewer && window.MoKa.table.closeViewer()) return true;
+            window.MoKa.table.hideMeaning();
+            return true;
+          } catch (e) {}
+        }
+        var tray = document.getElementById('tray-layer');
+        if (tray && !tray.classList.contains('is-hidden')) {
+          var tc = document.getElementById('btn-tray-close');
+          if (tc) { try { tc.click(); return true; } catch (e) {} }
+        }
+        var cover = document.getElementById('table-cover');
+        if (cover && !cover.classList.contains('is-hidden')) {
+          try { window.MoKa.table.hideCover(); return true; } catch (e) {}
+        }
+        // 各场景自己的页面栈（牌库 / 神签），再不行才回占卜桌
+        var app = window.MoKa && window.MoKa.app;
+        if (app && app.back) { try { if (app.back()) return true; } catch (e2) {} }
+        return false;
+      }
+      window.catcardBack = function () { try { return closeTopmost(); } catch (e) { return false; } };
+      window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeTopmost(); });
+    })();
+  </script>
+</body>
+</html>

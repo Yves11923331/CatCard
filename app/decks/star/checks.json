@@ -1,0 +1,8 @@
+{
+  "name": "星语牌组",
+  "cards": 12,
+  "symbols": "star",
+  "seed": false,
+  "addIfMissing": false,
+  "backTemplate": null
+}
