@@ -22,6 +22,43 @@
 
   var dbg = /[?&]dbg=1\b/.test(global.location.search);
 
+  /* ?dbg=1 时给页面自带的调试框 #err-box 加一颗「复制」，方便把真实报错发出来 */
+  if (dbg) {
+    var KEEP = '__mokaCopyBtn';
+    var obs = new MutationObserver(function () {
+      var box = global.document.getElementById('err-box');
+      if (!box || box[KEEP]) return;
+      box[KEEP] = true;
+      var b = global.document.createElement('button');
+      b.type = 'button';
+      b.textContent = '复制这段';
+      b.style.cssText = 'margin-top:6px;padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.6);'
+        + 'background:transparent;color:#fff;font-size:12px;';
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var txt = box.innerText || box.textContent || '';
+        try {
+          if (global.navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt).then(function () { b.textContent = '已复制'; });
+          }
+        } catch (e) {}
+        /* 兜底：选中文本，长按也能复制 */
+        try {
+          var r = global.document.createRange();
+          r.selectNodeContents(box);
+          var sel = global.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(r);
+        } catch (e2) {}
+        setTimeout(function () { b.textContent = '复制这段'; }, 2000);
+      });
+      box.appendChild(b);
+    });
+    try {
+      obs.observe(global.document.documentElement, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+
   global.addEventListener('error', function (ev) {
     if (dbg) return;                     /* ?dbg=1：原样透传，看真实报错 */
     if (ev && ev.message === 'Script error.' && !ev.error) {
