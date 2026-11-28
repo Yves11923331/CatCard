@@ -22,6 +22,18 @@
 
   var dbg = /[?&]dbg=1\b/.test(global.location.search);
 
+  /* 普通浏览：页面自带的调试红条 #err-box 直接不显示。
+     它是开发期用的（会把所有未捕获错误贴到屏幕底部），公开站点不该露给用户；
+     而且线上常见的跨域噪声（扩展注入、预览沙箱）只会显示成 "Script error."，
+     对用户既看不懂也没法处理。要排错就用 ?dbg=1。
+     用 CSS 藏而不是删节点：真机调试时控制台里 DOM 仍然完整。 */
+  if (!dbg) {
+    var st = global.document.createElement('style');
+    st.id = 'moka-web-hide-errbox';
+    st.textContent = '#err-box { display: none !important; }';
+    (global.document.head || global.document.documentElement).appendChild(st);
+  }
+
   /* ?dbg=1 时给页面自带的调试框 #err-box 加一颗「复制」，方便把真实报错发出来 */
   if (dbg) {
     var KEEP = '__mokaCopyBtn';
