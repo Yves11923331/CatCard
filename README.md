@@ -11,7 +11,7 @@
 ![Code License](https://img.shields.io/badge/code-MIT-blue)
 ![Offline](https://img.shields.io/badge/offline-100%25-8A7A3A)
 
-**在线试用（纯网页版，打开即用）：[yves11923331.github.io/CatCard](https://yves11923331.github.io/CatCard/)** —— 牌组导入导出走浏览器下载；牌面截图导出需要装 App。
+**在线试用（纯网页版，打开即用）：[手机版](https://yves11923331.github.io/CatCard/) · [电脑版](https://yves11923331.github.io/CatCard/desktop/)（左侧竖栏 + 右边牌堆栏、牌库多列网格，窄窗口自动退回手机布局）** —— 牌组导入导出走浏览器下载；牌面截图导出需要装 App。
 
 [功能](#功能) · [内置牌组](#内置牌组) · [技术架构](#技术架构) · [构建](#从源码构建) · [版权声明](#版权与二创声明)
 

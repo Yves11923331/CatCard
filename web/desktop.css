@@ -1,0 +1,159 @@
+/* ============================================================
+ * 猫卡 · 电脑版（web/desktop.css）
+ * ------------------------------------------------------------
+ * 只在网页版 /desktop/ 那一页加载，并且只在宽屏（≥1000px）生效；
+ * 窗口拖窄就退回手机布局，不写死。
+ *
+ * 改法纯 CSS：APK 的 www 一行没动，手机网页版也走不到这里。
+ *   1. 底部三 tab → 左侧竖栏
+ *   2. 占卜桌/周易 → 左边画布 + 右边牌堆栏（牌堆条竖过来）
+ *   3. 牌库首页 → 多列牌盒网格
+ *   4. 设置/神签/骰子/对话 → 居中列，不再拉满整屏
+ * ============================================================ */
+
+@media (min-width: 1000px) {
+  /* —— 1. 底部 tabbar → 左侧竖栏 —— */
+  body { flex-direction: row; }
+
+  #tabbar {
+    order: -1;
+    flex: none;
+    width: 92px;
+    height: 100vh;
+    height: 100dvh;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 2px;
+    padding: 16px 0;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    background: rgba(255, 255, 255, .96);
+  }
+  #tabbar .tab {
+    flex: none;
+    flex-direction: column;
+    gap: 5px;
+    padding: 14px 6px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    border-radius: 10px;
+  }
+  #tabbar .tab::before { display: none; }        /* 原来的顶部短横 → 不要 */
+  #tabbar .tab.is-active { background: var(--primary-soft); }
+
+  .stage { height: 100vh; height: 100dvh; }
+
+  /* —— 2. 占卜桌 / 周易：左边画布，右边牌堆栏 —— */
+  #scene-table.is-active,
+  #scene-zhouyi.is-active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  /* 顶栏只占左边画布那一列：右边一列留给牌堆栏，别让「围界 / 主题」压到牌堆按钮上 */
+  #scene-table .table-bar,
+  #scene-zhouyi .table-bar { grid-column: 1; }
+
+  #scene-table .playfield,
+  #scene-zhouyi .playfield { grid-column: 1; grid-row: 2; min-height: 0; }
+
+  #scene-table .pile-strip-wrap,
+  #scene-zhouyi .pile-strip-wrap {
+    grid-column: 2;
+    grid-row: 2;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    background: rgba(255, 255, 255, .72);
+    padding: 78px 10px 10px;             /* 顶上留出抽屉按钮的位置 */
+  }
+  #scene-table .pile-strip,
+  #scene-zhouyi .pile-strip {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+    padding: 0;
+    gap: 6px;
+  }
+  #scene-table .pile-item,
+  #scene-zhouyi .pile-item { width: 100%; }
+
+  /* 牌堆抽屉按钮：从画布右侧挪到牌堆栏顶上（原样式全带 !important，这里也带） */
+  #scene-table .tray-btn,
+  #scene-zhouyi .tray-btn {
+    right: 14px !important;
+    left: auto !important;
+    top: 14px !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+  /* 牌堆条目在竖栏里拉满宽度 */
+  #scene-table .pile-item,
+  #scene-zhouyi .pile-item { width: 100% !important; align-self: stretch; }
+  /* 右栏小标题（纯 CSS，不动 DOM） */
+  .pile-strip-wrap::before {
+    content: "牌堆";
+    display: block;
+    padding: 0 2px 8px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--ink-3);
+  }
+
+  /* —— 3. 牌库首页：多列牌盒网格 —— */
+  #lib-home.lib-page { max-width: 1320px !important; }
+  #lib-home .lib-scroll {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    grid-auto-rows: min-content;
+    align-content: start;
+    gap: 12px;
+    padding: 8px 24px 32px;
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  #lib-home .lib-head {
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* —— 4. 单列页：居中，不再拉满整屏 —— */
+  #scene-library .lib-page,
+  #scene-settings .lib-page,
+  #scene-lots .lib-page,
+  #scene-dice .lib-page,
+  #scene-chat .lib-page {
+    left: 0;
+    right: 0;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  /* 编辑器要画布，给宽一点 */
+  #lib-editor { max-width: 1180px !important; }
+
+  /* 桌面滚轮：牌堆栏和列表页都别再出现横向滚动条 */
+  #lib-home .lib-scroll { overscroll-behavior: contain; }
+}
+
+/* —— 回手机版的角标（只有桌面版页面有它） —— */
+.desk-back {
+  position: fixed;
+  left: 8px;
+  bottom: 10px;
+  width: 76px;
+  z-index: 900;
+  padding: 7px 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-3);
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+.desk-back:hover { color: var(--ink); border-color: var(--ink-3); }
