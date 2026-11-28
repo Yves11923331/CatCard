@@ -20,3 +20,6 @@ Thumbs.db
 node_modules/
 __pycache__/
 *.pyc
+
+# 网页版组装产物
+_site/

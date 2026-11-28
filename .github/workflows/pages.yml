@@ -1,0 +1,49 @@
+# 猫卡 · 网页版自动发布
+# ------------------------------------------------------------
+# 每次动到 app/www 或 web/ 就重新组装站点，发到 GitHub Pages：
+#   https://yves11923331.github.io/CatCard/
+# 站点 = app/www 原样 + web/web-bridge.js（浏览器版文件通道）。
+# 源码一行不改：仓库里的 www 永远等于装机包里的 www。
+name: 网页版
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/www/**'
+      - 'web/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: 组装站点
+        run: python3 web/建站点.py app/www _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
