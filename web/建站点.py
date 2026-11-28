@@ -54,10 +54,17 @@ def main():
     shutil.copytree(src, dst)
     shutil.copy(os.path.join(HERE, 'web-bridge.js'),
                 os.path.join(dst, 'js', 'web-bridge.js'))
+    shutil.copy(os.path.join(HERE, 'web-boot.js'),
+                os.path.join(dst, 'js', 'web-boot.js'))
     shutil.copy(os.path.join(HERE, 'desktop.css'),
                 os.path.join(dst, 'css', 'desktop.css'))
     idx = os.path.join(dst, 'index.html')
     s = io.open(idx, encoding='utf-8').read()
+    # web-boot 必须排在应用自己的脚本之前（它在捕获阶段过滤跨域噪声）
+    if 'web-boot.js' not in s:
+        if '</head>' not in s:
+            sys.exit('index.html 里找不到 </head>，注入点变了？')
+        s = s.replace('</head>', '  <script src="js/web-boot.js"></script>\n</head>', 1)
     if 'web-bridge.js' not in s:
         if '</body>' not in s:
             sys.exit('index.html 里找不到 </body>，注入点变了？')
