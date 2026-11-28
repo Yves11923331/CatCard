@@ -3,7 +3,7 @@
 纯网页版，打开就能用：
 
 - 手机版：<https://yves11923331.github.io/CatCard/>
-- 电脑版：<https://yves11923331.github.io/CatCard/desktop/>（`/desktop/` 子路径）
+- 电脑版：<https://yves11923331.github.io/CatCard/desktop.html>（`/desktop/` 只是跳转）
 
 ## 这里放什么
 

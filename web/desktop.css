@@ -50,61 +50,58 @@
 
   .stage { height: 100vh; height: 100dvh; }
 
-  /* —— 2. 占卜桌 / 周易：左边画布，右边牌堆栏 —— */
-  #scene-table.is-active,
-  #scene-zhouyi.is-active {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  /* 顶栏只占左边画布那一列：右边一列留给牌堆栏，别让「围界 / 主题」压到牌堆按钮上 */
+  /* —— 2. 占卜桌 / 周易：画布铺满，牌堆做成右上角的浮动面板 —— */
+  /* 不切一整列出去：右栏永远空着一大片，比例很难看。牌堆改成浮在画布上的卡片，
+     宽度固定 224px，牌多了自己在面板里滚。 */
   #scene-table .table-bar,
-  #scene-zhouyi .table-bar { grid-column: 1; }
-
-  #scene-table .playfield,
-  #scene-zhouyi .playfield { grid-column: 1; grid-row: 2; min-height: 0; }
+  #scene-zhouyi .table-bar { position: relative; z-index: 6; }
 
   #scene-table .pile-strip-wrap,
   #scene-zhouyi .pile-strip-wrap {
-    grid-column: 2;
-    grid-row: 2;
-    border-top: 0;
-    border-left: 1px solid var(--line);
-    background: rgba(255, 255, 255, .72);
-    padding: 78px 10px 10px;             /* 顶上留出抽屉按钮的位置 */
+    position: absolute;
+    right: 16px;
+    top: 66px;
+    width: 224px;
+    max-height: calc(100vh - 140px);
+    margin: 0;
+    padding: 10px;
+    z-index: 5;
+    border: 1px solid var(--line);
+    border-top: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .88);
+    box-shadow: 0 6px 20px rgba(28, 31, 36, .10);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
   #scene-table .pile-strip,
   #scene-zhouyi .pile-strip {
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
-    height: 100%;
+    max-height: calc(100vh - 210px);
     padding: 0;
-    gap: 6px;
+    gap: 4px;
   }
-  #scene-table .pile-item,
-  #scene-zhouyi .pile-item { width: 100%; }
-
-  /* 牌堆抽屉按钮：从画布右侧挪到牌堆栏顶上（原样式全带 !important，这里也带） */
-  #scene-table .tray-btn,
-  #scene-zhouyi .tray-btn {
-    right: 14px !important;
-    left: auto !important;
-    top: 14px !important;
-    bottom: auto !important;
-    transform: none !important;
-  }
-  /* 牌堆条目在竖栏里拉满宽度 */
   #scene-table .pile-item,
   #scene-zhouyi .pile-item { width: 100% !important; align-self: stretch; }
-  /* 右栏小标题（纯 CSS，不动 DOM） */
+  /* 面板小标题（纯 CSS，不动 DOM） */
   .pile-strip-wrap::before {
     content: "牌堆";
     display: block;
-    padding: 0 2px 8px;
-    font-size: 12px;
+    padding: 0 2px 6px;
+    font-size: 11.5px;
     letter-spacing: 2px;
     color: var(--ink-3);
+  }
+
+  /* 牌堆抽屉按钮：贴画布右下角，别压到浮层面板上 */
+  #scene-table .tray-btn,
+  #scene-zhouyi .tray-btn {
+    right: 18px !important;
+    bottom: 18px !important;
+    top: auto !important;
+    left: auto !important;
   }
 
   /* —— 3. 牌库首页：多列牌盒网格 —— */

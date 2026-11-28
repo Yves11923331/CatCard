@@ -20,23 +20,28 @@ TAG = '  <script src="js/web-bridge.js"></script>\n'
 
 
 def build_desktop(dst):
-    """生成 dst/desktop/index.html。
+    """生成 dst/desktop.html（电脑版）。
 
-    只多一个 HTML：靠 <base href="../"> 复用上一层的 js/css/图片，
-    不为电脑版再拷一份 73MB。
+    放在站点根目录而不是 desktop/ 子目录：这样相对路径天然指向上一层，
+    **不需要 <base href="../">** —— base 一旦遇到预览代理/路径重写就会把
+    js/css/assets 顶到别处去，还会让内联脚本报出看不清信息的 Script error。
+    子目录 desktop/index.html 只留一个跳转，兼容之前发出去的链接。
     """
-    src = os.path.join(dst, 'index.html')
-    s = io.open(src, encoding='utf-8').read()
-    if s.count('<head>') != 1:
-        sys.exit('index.html 里 <head> 不唯一，桌面版拼接逻辑要改')
-    s = s.replace('<head>', '<head>\n  <base href="../">', 1)
-    # 样式必须排在应用自己的 css 之后，否则同权重规则会被 main.css 盖掉
-    s = s.replace('</head>', '  <link rel="stylesheet" href="css/desktop.css">\n</head>', 1)
+    s = io.open(os.path.join(dst, 'index.html'), encoding='utf-8').read()
+    if TAG not in s:
+        sys.exit('注入点不见了')
+    s = s.replace(TAG, TAG + '  <link rel="stylesheet" href="css/desktop.css">\n', 1)
     s = s.replace('</body>',
-                  '  <a class="desk-back" href="../" aria-label="回手机版">← 手机版</a>\n</body>', 1)
+                  '  <a class="desk-back" href="./" aria-label="回手机版">← 手机版</a>\n</body>', 1)
+    io.open(os.path.join(dst, 'desktop.html'), 'w', encoding='utf-8').write(s)
+
     out = os.path.join(dst, 'desktop')
     os.makedirs(out, exist_ok=True)
-    io.open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(s)
+    io.open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(
+        '<!DOCTYPE html><meta charset="utf-8">'
+        '<meta http-equiv="refresh" content="0; url=../desktop.html">'
+        '<title>猫卡 · 电脑版</title>'
+        '<a href="../desktop.html">猫卡电脑版</a>\n')
 
 
 def main():
