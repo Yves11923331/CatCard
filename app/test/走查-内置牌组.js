@@ -1242,9 +1242,14 @@ function project(d) {
        但 decks/hero 的源文件与 19 张图必须原地留着，随时能「上架」搬回来。
        原来这 4 条钉的是"两副都在"，现在改成钉"下架后该在的还在、该不在的不在"。 */
     ok(!hero, '★ 英雄之旅 已下架（2026-11-19）：新装机不建、不进包');
-    ok(fs.existsSync(path.join(__dirname, '..', 'decks', 'hero', 'deck.json')) &&
-       fs.readdirSync(path.join(__dirname, '..', 'decks', 'hero', 'faces')).length === 19,
-      '★ 下架只是不进包：decks/hero 的 deck.json 与 19 张图都还在（能上架搬回来）');
+    /* 开源整理版没有收录 decks/hero（未进包的牌组不进公开仓）——有就照旧钉 19 张，没有就跳过。 */
+    const heroSrc = path.join(__dirname, '..', 'decks', 'hero');
+    if (fs.existsSync(path.join(heroSrc, 'deck.json'))) {
+      ok(fs.readdirSync(path.join(heroSrc, 'faces')).length === 19,
+        '★ 下架只是不进包：decks/hero 的 deck.json 与 19 张图都还在（能上架搬回来）');
+    } else {
+      note('decks/hero 未收录（开源整理版只随包发布进包的牌组）→ 这条源文件对照跳过');
+    }
     ok(!!ov, '★ 新装机有「Overflow牌组」');
     ok(!!ov && ov.cards.length === 16, '★ Overflow 16 张（' + (ov && ov.cards.length) + '）');
     ok(!!ov && new Set(ov.cards.map(c => c.image)).size === 4 &&

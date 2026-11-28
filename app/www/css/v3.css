@@ -2411,7 +2411,6 @@ html[data-ui-theme="dark"] #lib-editor {
 
 /* 编辑页骨架：头 + 画布 + 提示 + 工具坞 */
 .ed-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.ed-hint { flex: none; font-size: 11.5px; color: var(--ink-3); text-align: center; padding: 9px 14px 2px; letter-spacing: .2px; }
 /* ============================================================
    ★★ 2026-10-11 实测修（用户：「有些字太大了不协调」）——
    `.et-tip` 这个类名**在 CSS 里从来没有定义过**：编辑器里所有说明文字
@@ -2422,11 +2421,6 @@ html[data-ui-theme="dark"] #lib-editor {
    ============================================================ */
 .et-tip { font-size: 11.5px; line-height: 1.6; color: var(--ink-3); letter-spacing: .2px; }
 .et-tip b { color: var(--ink-2); font-weight: 600; }
-.et-inherit {
-  flex: none; margin: 6px 14px 0; padding: 7px 10px;
-  font-size: 11.5px; line-height: 1.55; color: var(--ink-2);
-  background: var(--fill); border-radius: 9px;
-}
 
 /* 牌面盒：所有文字层的定位都以它为基准（table.js 牌义弹窗也在用 .cv-card） */
 .cv-card {
@@ -2577,8 +2571,6 @@ html[data-ui-theme="dark"] #lib-editor {
   transition: flex-basis .3s cubic-bezier(.3,.8,.3,1), opacity .2s;
 }
 .ed-page.is-dockfull .ed-grab i { background: var(--ink-2) }
-.ed-cur { flex: none; font-size: 12.5px; font-weight: 600; color: var(--ink-3); letter-spacing: .2px; padding: 6px 16px 4px; }
-.ed-cur b { color: var(--ink); font-weight: 700; }   /* 700：原来用的是 900（<b> 默认），黑得像标题 */
 /* ============================================================
    ★ 2026-11-06（P1 坞顶固定改字区）—— 结构与代码在 editor.js，样式归这里
    ------------------------------------------------------------
@@ -2754,18 +2746,9 @@ html[data-ui-theme="dark"] #lib-editor .seg-btn.is-sel { color: #101317 !importa
   height: 2px; border-radius: 2px; background: var(--ink);
 }
 .ed-pane[hidden] { display: none }
-/* ★ 第三轮：顶栏多了 ⋯ 之后，360 宽的机器上标题会被挤成「编辑…」——窄屏直接不显示标题
-   （返回 / 撤销 / 重做 / ⋯ / 完成 都还在，语义靠上下文就够） */
-@media (max-width: 380px) {
-  #lib-editor .lib-head .lib-title { display: none; }
-  /* ★ 2026-11-17（用户报「他们偏左了」——右侧空一大块）：
-     标题是这一行里**唯一的 flex:1 撑杆**，一 display:none，后面四颗按钮就全挤在左边：
-     360 宽实测「完成」右缘只到 280（右边空 80px）、375 宽空 95px。
-     这里让"撤销"吃掉剩余空间：返回贴左，撤销/重做/⋯/完成 靠右成组，
-     「完成」右缘回到 14px 的 padding 上；图标之间仍是 gap:8，**不用** space-between
-     去硬摊（那会把间距变成 40~60px 那种奇怪值）。>380 宽时标题照样 flex:1，这条不生效。 */
-  #lib-editor .lib-head #ed-undo { margin-left: auto; }
-}
+/* ★ 2026-11-28（第二轮，用户要求）：撤销/重做已收进 ⋯ 面板（并排一行），
+   顶栏只剩 返回 / 标题 / ⋯ / 完成 —— 360 宽标题 18px 也放得下，
+   不再需要缩字号/收间距的窄屏补丁。原 `@media(max-width:380px)` 里藏标题那条已整条删除。 */
 
 /* ============================================================
    ★ 2026-11-14（第二轮）外观页**摊平**：四个分区常显（照预览稿 A2-完整-外观）
@@ -3074,6 +3057,25 @@ html[data-ui-theme="dark"] .ed-sheet-mask { background: rgba(0, 0, 0, .52); }
 }
 .ed-sheet-item:active { background: var(--fill); }
 .ed-sheet-item.is-danger { color: var(--danger); }
+/* ★ 2026-11-28（用户要求）：撤销/重做搬进 ⋯ 面板，并排一行（各占一半）。
+   图标 18 + 文字 14；禁用态只淡到 .35，仍看得出那里有按钮。 */
+.ed-sheet-hist {
+  display: flex; gap: 8px;
+  padding: 2px 0 10px;
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 2px;
+}
+.ed-sheet-hist-btn {
+  flex: 1; min-width: 0; min-height: 46px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: 0; border-radius: 10px;
+  background: var(--fill); color: var(--ink);
+  font: inherit; font-size: 14px; font-weight: 600; letter-spacing: .02em;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.ed-sheet-hist-btn svg { width: 18px; height: 18px; display: block; flex: none; }
+.ed-sheet-hist-btn:active { background: var(--line); }
+.ed-sheet-hist-btn:disabled { opacity: .35; }
 
 .ed-imgbar { display: none; }
 .ed-imgbar.is-on {
@@ -3085,7 +3087,6 @@ html[data-ui-theme="dark"] .ed-sheet-mask { background: rgba(0, 0, 0, .52); }
 .ed-imgbar span { flex: 1; min-width: 0; font-size: 12.5px; color: var(--accent); font-weight: 600; }   /* ★ 同上 */
 .ed-imgbar .btn-mini { min-width: 44px; min-height: 44px;   /* ★ 2026-11-06 40 → 44 */ padding: 8px 14px; font-size: 13px; }
 .ed-imgbar .ed-img-sca { font-variant-numeric: tabular-nums; font-weight: 800; }
-.ed-hint.is-hide { display: none; }
 
 /* 全宽小按钮（底子组的「让整副都这样」等） */
 .ed-wide { width: 100%; }
@@ -3093,17 +3094,12 @@ html[data-ui-theme="dark"] .ed-sheet-mask { background: rgba(0, 0, 0, .52); }
 /* 导出截图时：藏掉一切会挡住牌面的东西（Java 端截视口裁剪牌面矩形） */
 .is-export-hide { display: none !important; }
 
-/* 更多：整列按钮 */
-.ed-actions { display: flex; flex-direction: column; gap: 10px; }
-.ed-actions .btn { width: 100%; min-height: 44px; }   /* ★ 2026-11-06：原来高 42 */
-
 /* 顶栏按钮放大到 44px（画布页老规矩：App 通用 .btn-mini 只有 ~31px 点不中） */
 .ed-head .btn-mini { min-width: 44px; min-height: 44px; padding: 11px 12px; font-size: 14px; }
 /* ★ 2026-11-17（用户报「顶栏一行看着不齐」）：灰态原来 .35，实测合成后浅色只有 1.68:1、
    深色 2.10:1 —— 撤销/重做两颗看着像"没画出来/按钮坏了"。抬到 .5（浅 ≈2.4:1、深 ≈3.0:1），
    仍然是明显的"不可用"，但能看出那里有颗按钮。:disabled 不参与布局，高度/底色都不变。 */
 .ed-head .btn-mini:disabled { opacity: .5; }
-.ed-head #ed-undo, .ed-head #ed-redo { font-size: 18px; line-height: 1; }
 /* 顶栏图标按钮（Lucide 线条）：图标统一 19px、居中、按下只淡一层底色
    ★ 2026-11-17（用户报「编辑猫卡顶栏按钮错位」）——实测结论先写在前面：
      5 颗按钮改成**显式 44×44 方热区**之前，它们的盒子本来就都是 44 高（`min-*` 兜着），

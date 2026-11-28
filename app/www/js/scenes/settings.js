@@ -19,11 +19,11 @@
 
   const CARD_W_KEY = 'moka.cardW';
   const W_MIN = 40, W_MAX = 200, W_DEFAULT = 100, H_RATIO = 1.5;   // 2026-11-19 用户定：默认 100（原 90）
-  const VERSION = '2.6.10';
+  const VERSION = '2.7.2';
   /* 构建号 = AndroidManifest 里的 versionCode。
      ★ 为什么要摆在界面上：版本名一直是 1.0.5（用户要求不改），光看"版本"分不出装的是哪一次构建 ——
        排查"装了新版还是老毛病"时，这一行就是**唯一能对齐的指纹**。改一次壳就 +1。 */
-  const BUILD = '333';
+  const BUILD = '336';
 
   /* ---------------- 牌面默认大小 ---------------- */
   function clampW(v) {

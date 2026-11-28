@@ -7,7 +7,7 @@
 离线优先的 Android 占卜卡应用：自由摆放的占卜桌、可自定义的牌库、单屏牌面编辑器「鲸造」，以及神签、骰子、对话与周易。
 
 ![Platform](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
-![Version](https://img.shields.io/badge/version-2.6.10-4661E6)
+![Version](https://img.shields.io/badge/version-2.7.2-4661E6)
 ![Code License](https://img.shields.io/badge/code-MIT-blue)
 ![Offline](https://img.shields.io/badge/offline-100%25-8A7A3A)
 

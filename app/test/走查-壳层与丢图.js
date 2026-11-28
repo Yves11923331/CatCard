@@ -138,7 +138,7 @@ function group(name) { console.log('\n== ' + name); }
     const setjs = fs.readFileSync(path.join(ROOT, 'js/scenes/settings.js'), 'utf8');
     // ★ 构建号是「装的是哪一次」的唯一指纹：这里钉死，换包忘了同步就红。
     //   （这条原来在 走查-卢恩牌组.js 里，2026-09-20 那份删掉后搬到这里，跟着构建号走。）
-    ok(/const BUILD = '333'/.test(setjs), '设置页显示构建号 BUILD = 333');
+    ok(/const BUILD = '336'/.test(setjs), '设置页显示构建号 BUILD = 336');
     /* ★★ 2026-10-05 修「关键词太长时文字冲出底色 / 块向右偏」的真凶 —— 钉在壳层上：
        Android WebView 的 **Minimum font size 默认 8px**。牌义弹窗里那张牌只有 --card-w:66px，
        关键词字号算下来才 4.89px → 被强制抬到 8px（1.64 倍）→ 文字比盒子宽，nowrap 又不让折
@@ -152,7 +152,7 @@ function group(name) { console.log('\n== ' + name); }
       '★ WebView 不跟随系统字体缩放（版面才稳定）');
     /* ★ 2026-10-25：279 出包时这条正则漏改（settings.js 已是 2.2.7），走查红 1 条。
        它是"同步点"，换版本时**正则和文案都要改**，查构建号.py 只扫文案、扫不到正则。 */
-    ok(/const VERSION = '2\.6\.10'/.test(setjs), '版本名 2.6.10（构建号只增不减）');
+    ok(/const VERSION = '2\.7\.2'/.test(setjs), '版本名 2.7.2（构建号只增不减）');
     ok(/<span>构建<\/span>/.test(setjs), '「关于」里真的有「构建」这一行');
     /* ★★ 2026-10-12（用户：「只写在项目记录里，似乎还不够」）：抽屉底部那处**写死的版本号**
        是典型漏网 —— index.html 里原本躺着「猫卡 2.1.0 · 239」，构建号滚到 241 它也不动

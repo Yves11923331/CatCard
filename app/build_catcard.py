@@ -54,7 +54,7 @@ ZIPALIGN = os.environ.get('CATCARD_ZIPALIGN', '/usr/bin/zipalign')
 APKSIGNER_JAR = os.environ.get('CATCARD_APKSIGNER', '/usr/share/java/apksigner.jar')
 AT = os.environ.get('CATCARD_AT', '/tmp/catcard-at')          # ASCII 暂存区
 
-NAME, VER, CODE = '猫卡', '2.6.10', 333
+NAME, VER, CODE = '猫卡', '2.7.2', 336
 ALIAS = 'catcard'
 MIN_SDK, TARGET_SDK = 29, 34
 

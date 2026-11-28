@@ -54,12 +54,6 @@
   const BG_STYLE_ALL = (function () {
     const o = {}; BGSTYLE_GROUPS.forEach(function (g) { g[1].forEach(function (id) { o[id] = 1; }); }); return o;
   })();
-  function bgcatOf(styleId) {
-    for (var i = 0; i < BGSTYLE_GROUPS.length; i++) {
-      if (BGSTYLE_GROUPS[i][1].indexOf(styleId) >= 0) return BGSTYLE_GROUPS[i][0];
-    }
-    return '素净';
-  }
   /* 第二批 30 款 = 自带配色（颜色/深浅对它不起作用 → 置灰） */
   const FIXED_STYLE = { plain: 1, scroll: 1, bamboo: 1, rice: 1, carve: 1, ledger: 1, label: 1, neon: 1,
     halo: 1, spot: 1, glass: 1, hex: 1, notch: 1, stripe: 1, dotgrid: 1, gridpaper: 1, sidebar: 1,
@@ -551,7 +545,6 @@
     const deck = D.findDeck(deckId);
     if (!deck || !draft) { L.goHome(); return; }
     const isNew = !cardId;
-
     /* ★ 2026-11-19：每次重画都从"半屏"档开始，清掉上一次可能留下的铺满/拖动类。
        #lib-editor 是常驻节点，类不会随 innerHTML 重建，不在这里清会带到下一张卡。 */
     dockLevel = 'half';
@@ -575,12 +568,6 @@
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' +
         '</button>' +
         '<div class="lib-title">' + (isNew ? '新猫卡' : '编辑猫卡') + '</div>' +
-        '<button type="button" class="btn-mini ed-ico" id="ed-undo" aria-label="撤销" title="撤销">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>' +
-        '</button>' +
-        '<button type="button" class="btn-mini ed-ico" id="ed-redo" aria-label="重做" title="重做">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>' +
-        '</button>' +
         '<button type="button" class="btn-mini ed-ico" id="ed-more" aria-label="更多操作" title="更多" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.4" cy="12" r="1.35"/><circle cx="12" cy="12" r="1.35"/><circle cx="18.6" cy="12" r="1.35"/></svg>' +
         '</button>' +
@@ -811,6 +798,18 @@
           '<button type="button" class="ed-sheet-mask" id="ed-sheet-mask" aria-label="关闭"></button>' +
           '<div class="ed-sheet-box" role="dialog" aria-label="更多操作">' +
             '<div class="ed-sheet-h"><i></i></div>' +
+            /* ★ 2026-11-28（用户要求）：撤销/重做从顶栏收进这里，并排一行；
+               顶栏只剩 返回 / 标题 / ⋯ / 完成 —— 360 宽标题也能完整显示。 */
+            '<div class="ed-sheet-hist">' +
+              '<button type="button" class="ed-sheet-hist-btn" id="ed-undo" aria-label="撤销">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>' +
+                '撤销' +
+              '</button>' +
+              '<button type="button" class="ed-sheet-hist-btn" id="ed-redo" aria-label="重做">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>' +
+                '重做' +
+              '</button>' +
+            '</div>' +
             '<button type="button" class="ed-sheet-item" id="ed-export-face">导出牌面图</button>' +
             '<button type="button" class="ed-sheet-item" id="ed-export-back">导出牌背图</button>' +
             (cardId ? '<button type="button" class="ed-sheet-item" id="ed-clone-card">复制这张卡</button>' : '') +
@@ -1083,7 +1082,6 @@
     setTxt('#ed-meaning-v', (draft.meaning || '') ? ((draft.meaning || '').length + ' 字') : '未填');
 
     /* 位置 */
-    const vy = pageEl.querySelector('#ed-vy'); if (vy) vy.value = draft[Pk + 'Vy'];
     syncYRuler(draft[Pk + 'Vy']);
     pageEl.querySelectorAll('#ed-align .seg-btn').forEach(function (b) {
       b.classList.toggle('is-sel', b.dataset.align === draft[Pk + 'H']);
@@ -1156,11 +1154,6 @@
     /* 图片（2026-11-14：54×82 缩略图下线，画布上的牌就是预览） */
     pageEl.querySelectorAll('#ed-imgfilter .seg-btn').forEach(function (b) {
       b.classList.toggle('is-sel', b.dataset.filter === String(draft.imgFilter || 'none'));
-    });
-
-    /* 内容 */
-    pageEl.querySelectorAll('#ed-kwon .seg-btn').forEach(function (b) {
-      b.classList.toggle('is-sel', (b.dataset.kwon === '1') === (draft.kwOn !== false));
     });
   }
 
@@ -1496,18 +1489,6 @@
     });
 
     /* —— 位置 —— */
-    const vyEl = pageEl.querySelector('#ed-vy');   /* 2026-11-14 起画布直接拖，滑条已下线 */
-    let vyBefore = null;
-    if (vyEl) vyEl.addEventListener('input', function () {
-      /* ★ 2026-10-11 加固：快照改在**首次 input** 时取，不再依赖 pointerdown ——
-         键盘方向键 / 无障碍操作 / 程序化设值都不会再漏进撤销栈（实测发现的）。 */
-      if (!vyBefore) vyBefore = snap();
-      draft[P() + 'Vy'] = parseFloat(this.value) || 0;
-      paintBlock(sel);
-      setTxtNow('#ed-pos-v', Math.round(draft[P() + 'Vy']) + '% · ' + ({ l: '左', c: '中', r: '右' }[draft[P() + 'H']] || '中'));
-      updateCur();
-    });
-    if (vyEl) vyEl.addEventListener('change', function () { commit(vyBefore); vyBefore = null; });
     pageEl.querySelectorAll('#ed-align .seg-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         const before = snap();
@@ -1723,14 +1704,6 @@
     meEl.addEventListener('focus', armTxt);
     meEl.addEventListener('input', function () { draft.meaning = this.value; persistSoon(); setTxtNow('#ed-meaning-v', this.value ? this.value.length + ' 字' : '未填'); });
     meEl.addEventListener('blur', disarmTxt);
-    pageEl.querySelectorAll('#ed-kwon .seg-btn').forEach(function (b) {
-      b.addEventListener('click', function () {
-        const before = snap();
-        draft.kwOn = (b.dataset.kwon === '1');
-        paintFace(); dockSync();
-        commit(before);
-      });
-    });
 
     /* —— 更多（顶栏 ⋯ → 底部动作面板） —— */
     const moreBtn = pageEl.querySelector('#ed-more');
@@ -1745,7 +1718,7 @@
       const sheetMaskEl = pageEl.querySelector('#ed-sheet-mask');
       sheetBox.addEventListener('pointerdown', function (e) {
         if (!sheetOpen) return;
-        if (e.target.closest('.ed-sheet-item')) return;   // 按钮上不拖
+        if (e.target.closest('.ed-sheet-item, .ed-sheet-hist')) return;   // 按钮/历史行上不拖
         sy0 = e.clientY; sdy = 0;
         sheetBox.classList.add('is-drag');
         try { sheetBox.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1851,10 +1824,6 @@
   }
 
   function setTxtNow(id, v) { const n = pageEl.querySelector(id); if (n) n.textContent = v; }
-  function updateCur() {
-    const cur = pageEl.querySelector('#ed-cur');
-    if (cur) cur.innerHTML = '正在调整 <b>' + (sel === 'kw' ? '关键词' : '卡名') + '</b>';
-  }
 
   /* 顶栏 ⋯「更多」面板：开/关只切 hidden + is-open，动作都在 DOM 里常驻（测试也方便） */
   function setSheet(on) {
@@ -1870,6 +1839,7 @@
       if (box) box.style.transform = '';
       if (mask) mask.style.opacity = '';
       sheet.hidden = false;
+      syncUndoBtns();   // ★ 2026-11-28：撤销/重做搬进面板后，开面板先对一次可用态
       /* ★ 2026-11-14（第五轮）：先强制回流，再双 rAF 加 is-open ——
          单 rAF 在 WebView 里有时和"取消 hidden"落在同一帧，起始位移没被画出来，
          看起来就是"啪一下出现、一点动效都没有"。 */
@@ -1890,11 +1860,9 @@
     if (imgMode && openCanvasFromDock) openCanvasFromDock();
     const stage = pageEl.querySelector('#ed-stage');
     if (stage) stage.classList.toggle('is-imgmode', imgMode);
-    const hint = pageEl.querySelector('#ed-hint');
     const bar = pageEl.querySelector('#ed-imgbar');
-    if (hint) hint.classList.toggle('is-hide', imgMode);
     if (bar) bar.classList.toggle('is-on', imgMode);
-    if (imgMode) { updateCur(); setImgScaleNow(parseFloat(draft && draft.imgScale) || 100); }
+    if (imgMode) { setImgScaleNow(parseFloat(draft && draft.imgScale) || 100); }
   }
 
   /* 图片缩放的实时读数（imgbar 里那个百分比） */
@@ -2090,7 +2058,6 @@
       paintBlock(gDrag.kind);
       setTxtNow('#ed-pos-v', Math.round(vy) + '% · ' + ({ l: '左', c: '中', r: '右' }[h] || '中'));
       syncYRuler(vy);
-      updateCur();
       guideOn(snapY, h);
       return;
     }
@@ -2245,10 +2212,8 @@
   async function captureCardRegion(fileName) {
     if (dockLevel !== 'half' || pageEl.classList.contains('is-docksnap')) return '导出失败：请先返回画布，再导出';
     const dock = pageEl.querySelector('.ed-dock');
-    const hint = pageEl.querySelector('#ed-hint');
     const bar = pageEl.querySelector('#ed-imgbar');
-    const inh = pageEl.querySelector('.et-inherit');
-    [dock, hint, bar, inh].forEach(function (n) { if (n) n.classList.add('is-export-hide'); });
+    [dock, bar].forEach(function (n) { if (n) n.classList.add('is-export-hide'); });
     await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
     fitBigCard();
     await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
@@ -2261,7 +2226,7 @@
         Math.round(r.left * dpr), Math.round(r.top * dpr),
         Math.round(r.width * dpr), Math.round(r.height * dpr)));
     } catch (e) { res = '导出失败：' + ((e && e.message) || e); }
-    [dock, hint, bar, inh].forEach(function (n) { if (n) n.classList.remove('is-export-hide'); });
+    [dock, bar].forEach(function (n) { if (n) n.classList.remove('is-export-hide'); });
     fitBigCard();
     return res;
   }
