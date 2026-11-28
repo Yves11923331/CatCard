@@ -18,7 +18,7 @@
   #tabbar {
     order: -1;
     flex: none;
-    width: 92px;
+    width: 104px;
     height: 100vh;
     height: 100dvh;
     flex-direction: column;
@@ -32,12 +32,19 @@
   #tabbar .tab {
     flex: none;
     flex-direction: column;
-    gap: 5px;
-    padding: 14px 6px;
+    justify-content: center;
+    gap: 9px;
+    min-height: 76px;
+    padding: 16px 8px;
     font-size: 13px;
     letter-spacing: 1px;
-    border-radius: 10px;
+    border-radius: 12px;
+    box-sizing: border-box;
   }
+  #tabbar .tab .ti svg,
+  #tabbar .tab .ti { width: 22px; height: 22px; }
+  #tabbar .tab .tl { font-size: 12.5px; letter-spacing: 1px; }
+  #tabbar { gap: 10px; padding: 18px 10px; }
   #tabbar .tab::before { display: none; }        /* 原来的顶部短横 → 不要 */
   #tabbar .tab.is-active { background: var(--primary-soft); }
 
